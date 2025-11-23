@@ -19,6 +19,7 @@ import MainLayout from './components/layout/MainLayout';
 import Blog from './pages/userdashboard/Blog';
 import BlogPage from './pages/Blogs/blogs';
 import BlogDetail from './pages/Blogs/BlogDetail';
+import QAPage from './pages/public/QAPage';
 import Messages from './pages/userdashboard/Messages';
 import Directory from './pages/userdashboard/Directory';
 import Forms from './pages/userdashboard/Forms';
@@ -112,6 +113,7 @@ function App() {
           <Route path="/lawyer/:id" element={<LawyerProfile />} />
           <Route path="/blogs" element={<BlogPage />} />
           <Route path="/blog/:id" element={<BlogDetail />} />
+          <Route path="/qa" element={<QAPage />} />
         </Route>
         
         {/* Catch all - redirect to home */}

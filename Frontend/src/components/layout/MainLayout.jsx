@@ -179,6 +179,19 @@ function Header({ currentLanguage, setCurrentLanguage, translations }) {
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"></div>
             )}
           </button>
+          <button 
+            onClick={() => navigate('/qa')}
+            className={`hidden md:flex items-center text-sm gap-2 transition-all duration-200 px-3 py-2 relative ${
+              isActive('/qa') 
+                ? 'text-white' 
+                : 'text-white/90 hover:text-white'
+            }`}
+          >
+            <span>Q&A</span>
+            {isActive('/qa') && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"></div>
+            )}
+          </button>
         </div>
 
         <div className="flex items-center gap-2">

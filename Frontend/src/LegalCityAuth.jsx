@@ -14,7 +14,7 @@ const AuthContent = () => {
   const { user, login, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [authMode, setAuthMode] = useState(location.pathname === '/register' ? 'register' : 'login');
+  const [authMode, setAuthMode] = useState((location.pathname === '/register' || location.pathname === '/signup') ? 'register' : 'login');
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState('');
 
   const handleRegisterSuccess = (email) => {
@@ -90,7 +90,7 @@ const AuthContent = () => {
             />
           ) : authMode === 'login' ? (
             <Login
-              onSwitchToRegister={() => { setAuthMode('register'); navigate('/register'); }}
+              onSwitchToRegister={() => { setAuthMode('register'); navigate('/signup'); }}
               onSwitchToForgot={() => setAuthMode('forgot')}
               onLoginSuccess={handleLoginSuccess}
 

@@ -55,7 +55,8 @@ function App() {
       <Routes>
         {/* Auth routes - No header/footer */}
         <Route path="/login" element={<LegalCityAuth />} />
-        <Route path="/register" element={<LegalCityAuth />} />
+        <Route path="/register" element={<Navigate to="/signup" replace />} />
+        <Route path="/signup" element={<LegalCityAuth />} />
         <Route path="/forgot-password" element={<LegalCityAuth />} />
         <Route path="/reset-password" element={<LegalCityAuth />} />
         <Route path="/verify-email" element={<LegalCityAuth />} />

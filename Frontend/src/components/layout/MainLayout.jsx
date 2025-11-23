@@ -72,7 +72,7 @@ function Header({ currentLanguage, setCurrentLanguage, translations }) {
   };
 
   const handleSignupClick = () => {
-    navigate('/register');
+    navigate('/signup');
   };
 
   // Close mobile menu on outside click

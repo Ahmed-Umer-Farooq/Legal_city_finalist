@@ -64,7 +64,7 @@ function App() {
         <Route path="/logout" element={<Logout />} />
         
         {/* SEO-Friendly Lawyer Dashboard Routes */}
-        <Route path="/lawyer-dashboard" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
+        <Route path="/lawyer-dashboard" element={<Navigate to="/lawyer/dashboard" replace />} />
         <Route path="/lawyer/dashboard" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
         <Route path="/lawyer/dashboard/overview" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
         <Route path="/lawyer/dashboard/cases" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />

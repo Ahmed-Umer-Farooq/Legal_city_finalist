@@ -34,6 +34,8 @@ export default function LawyerDashboard() {
   const [currentUser, setCurrentUser] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -708,51 +710,51 @@ export default function LawyerDashboard() {
               <p className="text-[#737791] text-sm">Frequently used actions</p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-              <button onClick={() => setShowClientModal(true)} className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
+              <button onClick={() => { setActiveNavItem('clients'); navigate('/lawyer/dashboard/clients'); }} className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
                 <Users className="w-5 h-5 text-[#6B7280]" />
                 <span className="text-xs font-medium text-center leading-tight text-[#374151]">New Client</span>
               </button>
-              <button className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
+              <button onClick={() => { setActiveNavItem('contacts'); navigate('/lawyer/dashboard/contacts'); }} className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
                 <UserCheck className="w-5 h-5 text-[#6B7280]" />
                 <span className="text-xs font-medium text-center leading-tight text-[#374151]">New Contact</span>
               </button>
-              <button onClick={() => setShowCaseForm(true)} className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
+              <button onClick={() => { setActiveNavItem('cases'); navigate('/lawyer/dashboard/cases'); }} className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
                 <FileText className="w-5 h-5 text-[#6B7280]" />
                 <span className="text-xs font-medium text-center leading-tight text-[#374151]">New Matter</span>
               </button>
-              <button onClick={() => setShowEventModal(true)} className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
+              <button onClick={() => { setActiveNavItem('calendar'); navigate('/lawyer/dashboard/calendar'); }} className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
                 <Calendar className="w-5 h-5 text-[#6B7280]" />
                 <span className="text-xs font-medium text-center leading-tight text-[#374151]">New Event</span>
               </button>
-              <button onClick={() => setShowTaskModal(true)} className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
+              <button onClick={() => { setActiveNavItem('tasks'); navigate('/lawyer/dashboard/tasks'); }} className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
                 <CheckSquare className="w-5 h-5 text-[#6B7280]" />
                 <span className="text-xs font-medium text-center leading-tight text-[#374151]">New Task</span>
               </button>
-              <button className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
+              <button onClick={() => { setActiveNavItem('documents'); navigate('/lawyer/dashboard/documents'); }} className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
                 <File className="w-5 h-5 text-[#6B7280]" />
                 <span className="text-xs font-medium text-center leading-tight text-[#374151]">New Note</span>
               </button>
-              <button className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
+              <button onClick={() => { setActiveNavItem('contacts'); navigate('/lawyer/dashboard/contacts'); }} className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
                 <Phone className="w-5 h-5 text-[#6B7280]" />
                 <span className="text-xs font-medium text-center leading-tight text-[#374151]">Log Call</span>
               </button>
-              <button className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
+              <button onClick={() => { setActiveNavItem('messages'); navigate('/lawyer/dashboard/messages'); }} className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
                 <MessageCircle className="w-5 h-5 text-[#6B7280]" />
                 <span className="text-xs font-medium text-center leading-tight text-[#374151]">Send Message</span>
               </button>
-              <button className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
+              <button onClick={() => { setActiveNavItem('reports'); navigate('/lawyer/dashboard/reports'); }} className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
                 <Clock className="w-5 h-5 text-[#6B7280]" />
                 <span className="text-xs font-medium text-center leading-tight text-[#374151]">Track Time</span>
               </button>
-              <button className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
+              <button onClick={() => { setActiveNavItem('reports'); navigate('/lawyer/dashboard/reports'); }} className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
                 <DollarSign className="w-5 h-5 text-[#6B7280]" />
                 <span className="text-xs font-medium text-center leading-tight text-[#374151]">Add Expense</span>
               </button>
-              <button className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
+              <button onClick={() => { setActiveNavItem('reports'); navigate('/lawyer/dashboard/reports'); }} className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
                 <File className="w-5 h-5 text-[#6B7280]" />
                 <span className="text-xs font-medium text-center leading-tight text-[#374151]">New Invoice</span>
               </button>
-              <button className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
+              <button onClick={() => { setActiveNavItem('reports'); navigate('/lawyer/dashboard/reports'); }} className="flex flex-col items-center gap-2 p-3 bg-[#F8F9FA] hover:bg-[#E5E7EB] rounded-lg transition-all min-h-[80px]">
                 <CreditCard className="w-5 h-5 text-[#6B7280]" />
                 <span className="text-xs font-medium text-center leading-tight text-[#374151]">Record Payment</span>
               </button>
@@ -762,14 +764,24 @@ export default function LawyerDashboard() {
           {/* Professional Calendar */}
           <div className="bg-white rounded-2xl border border-[#F8F9FA] shadow-md p-7">
             <div className="flex items-center justify-between mb-6">
-              <button className="p-2 hover:bg-[#F8F9FA] rounded-lg transition-colors">
+              <button 
+                onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
+                className="p-2 hover:bg-[#F8F9FA] rounded-lg transition-colors"
+              >
                 <ChevronLeft className="w-5 h-5 text-[#6B7280]" />
               </button>
               <div className="text-center">
-                <h2 className="text-[#181A2A] text-lg font-semibold">December 2024</h2>
-                <p className="text-[#737791] text-sm">Today: Dec 15, 2024</p>
+                <h2 className="text-[#181A2A] text-lg font-semibold">
+                  {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </h2>
+                <p className="text-[#737791] text-sm">
+                  Today: {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </p>
               </div>
-              <button className="p-2 hover:bg-[#F8F9FA] rounded-lg transition-colors">
+              <button 
+                onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
+                className="p-2 hover:bg-[#F8F9FA] rounded-lg transition-colors"
+              >
                 <ChevronRight className="w-5 h-5 text-[#6B7280]" />
               </button>
             </div>
@@ -786,41 +798,61 @@ export default function LawyerDashboard() {
               </div>
               
               {/* Calendar Days */}
-              {[
-                [25, 26, 27, 28, 29, 30, 1],
-                [2, 3, 4, 5, 6, 7, 8],
-                [9, 10, 11, 12, 13, 14, 15],
-                [16, 17, 18, 19, 20, 21, 22],
-                [23, 24, 25, 26, 27, 28, 29],
-                [30, 31, 1, 2, 3, 4, 5]
-              ].map((week, weekIndex) => (
-                <div key={weekIndex} className="grid grid-cols-7 gap-1">
-                  {week.map((date, dateIndex) => {
-                    const isToday = date === 15 && weekIndex === 2;
-                    const hasEvent = [3, 7, 12, 18, 24].includes(date) && weekIndex >= 1 && weekIndex <= 4;
-                    const isPrevNext = (weekIndex === 0 && date > 20) || (weekIndex === 5 && date < 10);
-                    
-                    return (
-                      <div key={dateIndex} className="relative">
-                        <button className={`w-full h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-all hover:bg-[#F8F9FA] ${
-                          isToday 
-                            ? 'bg-[#007EF4] text-white shadow-md' 
-                            : isPrevNext
-                            ? 'text-[#D1D5DB]'
-                            : 'text-[#374151] hover:text-[#007EF4]'
-                        }`}>
-                          {date}
-                        </button>
-                        {hasEvent && (
-                          <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
-                            <div className="w-1.5 h-1.5 bg-[#16D959] rounded-full"></div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
+              {(() => {
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                const startDate = new Date(firstDay);
+                startDate.setDate(startDate.getDate() - (firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1));
+                
+                const weeks = [];
+                const currentWeekDate = new Date(startDate);
+                
+                for (let week = 0; week < 6; week++) {
+                  const weekDays = [];
+                  for (let day = 0; day < 7; day++) {
+                    weekDays.push(new Date(currentWeekDate));
+                    currentWeekDate.setDate(currentWeekDate.getDate() + 1);
+                  }
+                  weeks.push(weekDays);
+                }
+                
+                return weeks.map((week, weekIndex) => (
+                  <div key={weekIndex} className="grid grid-cols-7 gap-1">
+                    {week.map((date, dateIndex) => {
+                      const isToday = date.toDateString() === new Date().toDateString();
+                      const isSelected = date.toDateString() === selectedDate.toDateString();
+                      const isCurrentMonth = date.getMonth() === month;
+                      const hasEvent = [3, 7, 12, 18, 24].includes(date.getDate()) && isCurrentMonth;
+                      
+                      return (
+                        <div key={dateIndex} className="relative">
+                          <button 
+                            onClick={() => setSelectedDate(new Date(date))}
+                            className={`w-full h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-all hover:bg-[#F8F9FA] ${
+                              isToday 
+                                ? 'bg-[#007EF4] text-white shadow-md' 
+                                : isSelected
+                                ? 'bg-[#EDF3FF] text-[#007EF4] border-2 border-[#007EF4]'
+                                : !isCurrentMonth
+                                ? 'text-[#D1D5DB]'
+                                : 'text-[#374151] hover:text-[#007EF4]'
+                            }`}
+                          >
+                            {date.getDate()}
+                          </button>
+                          {hasEvent && (
+                            <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
+                              <div className="w-1.5 h-1.5 bg-[#16D959] rounded-full"></div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ));
+              })()}
             </div>
             
             {/* Upcoming Events */}

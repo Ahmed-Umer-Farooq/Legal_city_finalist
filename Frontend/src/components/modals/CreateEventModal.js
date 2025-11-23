@@ -27,8 +27,8 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }) {
   const fetchCasesAndClients = async () => {
     try {
       const [casesRes, clientsRes] = await Promise.all([
-        api.get('/cases?page=1&limit=100'),
-        api.get('/clients?page=1&limit=100')
+        api.get('/lawyer/cases?page=1&limit=100'),
+        api.get('/lawyer/clients?page=1&limit=100')
       ]);
       setCases(casesRes.data?.data || []);
       setClients(clientsRes.data?.data || []);
@@ -52,7 +52,7 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess }) {
         client_id: formData.client_id || null,
         attendees: formData.attendees ? formData.attendees.split(',').map(a => a.trim()) : []
       };
-      const response = await api.post('/events', payload);
+      const response = await api.post('/lawyer/events', payload);
       if (response.data?.success) {
         alert('Event created successfully!');
         onSuccess();

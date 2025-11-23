@@ -1,41 +1,50 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 
+// Eager load critical components
 import LegalCityAuth from './LegalCityAuth';
 import ProtectedRoute from './components/ProtectedRoute';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import GoogleUserSetup from './pages/auth/GoogleUserSetup';
-import GoogleLawyerSetup from './pages/auth/GoogleLawyerSetup';
-import LawyerDirectory from './pages/public/LawyerDirectory';
-import LawyerProfile from './pages/LawyerProfile';
-import LawyerDashboard from './pages/lawyer/LawyerDashboard';
-import FindLawyer from './pages/FindLawyer';
-import SearchResults from './pages/SearchResults';
-import UserDashboard from './pages/userdashboard/UserDashboard';
 import UserInterface from './pages/UserInterface';
-import SharedLayout from './components/layout/SharedLayout';
 import MainLayout from './components/layout/MainLayout';
-import Blog from './pages/userdashboard/Blog';
-import BlogPage from './pages/Blogs/blogs';
-import BlogDetail from './pages/Blogs/BlogDetail';
-import QAPage from './pages/public/QAPage';
-import Messages from './pages/userdashboard/Messages';
-import Directory from './pages/userdashboard/Directory';
-import Forms from './pages/userdashboard/Forms';
-import SocialMedia from './pages/userdashboard/SocialMedia';
-import Tasks from './pages/userdashboard/Tasks';
-import Cases from './pages/userdashboard/Cases';
-import Dashboard from './pages/userdashboard/Dashboard';
-import Accounting from './pages/userdashboard/Accounting';
-import Profile from './pages/userdashboard/Profile';
-import Calendar from './pages/userdashboard/Calendar';
-import QA from './pages/userdashboard/QA';
-import ChatPage from './pages/userdashboard/ChatPage';
+import SharedLayout from './components/layout/SharedLayout';
 
-import Refer from './pages/userdashboard/Refer';
-import Settings from './pages/userdashboard/Settings';
-import Logout from './pages/auth/Logout';
+// Lazy load non-critical components
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const GoogleUserSetup = lazy(() => import('./pages/auth/GoogleUserSetup'));
+const GoogleLawyerSetup = lazy(() => import('./pages/auth/GoogleLawyerSetup'));
+const LawyerDirectory = lazy(() => import('./pages/public/LawyerDirectory'));
+const LawyerProfile = lazy(() => import('./pages/LawyerProfile'));
+const LawyerDashboard = lazy(() => import('./pages/lawyer/LawyerDashboard'));
+const FindLawyer = lazy(() => import('./pages/FindLawyer'));
+const SearchResults = lazy(() => import('./pages/SearchResults'));
+const UserDashboard = lazy(() => import('./pages/userdashboard/UserDashboard'));
+const Blog = lazy(() => import('./pages/userdashboard/Blog'));
+const BlogPage = lazy(() => import('./pages/Blogs/blogs'));
+const BlogDetail = lazy(() => import('./pages/Blogs/BlogDetail'));
+const QAPage = lazy(() => import('./pages/public/QAPage'));
+const Messages = lazy(() => import('./pages/userdashboard/Messages'));
+const Directory = lazy(() => import('./pages/userdashboard/Directory'));
+const Forms = lazy(() => import('./pages/userdashboard/Forms'));
+const SocialMedia = lazy(() => import('./pages/userdashboard/SocialMedia'));
+const Tasks = lazy(() => import('./pages/userdashboard/Tasks'));
+const Cases = lazy(() => import('./pages/userdashboard/Cases'));
+const Dashboard = lazy(() => import('./pages/userdashboard/Dashboard'));
+const Accounting = lazy(() => import('./pages/userdashboard/Accounting'));
+const Profile = lazy(() => import('./pages/userdashboard/Profile'));
+const Calendar = lazy(() => import('./pages/userdashboard/Calendar'));
+const QA = lazy(() => import('./pages/userdashboard/QA'));
+const ChatPage = lazy(() => import('./pages/userdashboard/ChatPage'));
+const Refer = lazy(() => import('./pages/userdashboard/Refer'));
+const Settings = lazy(() => import('./pages/userdashboard/Settings'));
+const Logout = lazy(() => import('./pages/auth/Logout'));
+
+// Loading component
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  </div>
+);
 
 function App() {
   return (
@@ -52,7 +61,8 @@ function App() {
           },
         }}
       />
-      <Routes>
+      <Suspense fallback={<LoadingSpinner />}>
+        <Routes>
         {/* Auth routes - No header/footer */}
         <Route path="/login" element={<LegalCityAuth />} />
         <Route path="/register" element={<Navigate to="/signup" replace />} />
@@ -60,13 +70,13 @@ function App() {
         <Route path="/forgot-password" element={<LegalCityAuth />} />
         <Route path="/reset-password" element={<LegalCityAuth />} />
         <Route path="/verify-email" element={<LegalCityAuth />} />
-        <Route path="/google-user-setup" element={<GoogleUserSetup />} />
-        <Route path="/google-lawyer-setup" element={<GoogleLawyerSetup />} />
-        <Route path="/logout" element={<Logout />} />
+        <Route path="/google-user-setup" element={<Suspense fallback={<LoadingSpinner />}><GoogleUserSetup /></Suspense>} />
+        <Route path="/google-lawyer-setup" element={<Suspense fallback={<LoadingSpinner />}><GoogleLawyerSetup /></Suspense>} />
+        <Route path="/logout" element={<Suspense fallback={<LoadingSpinner />}><Logout /></Suspense>} />
         
         {/* SEO-Friendly Lawyer Dashboard Routes */}
         <Route path="/lawyer-dashboard" element={<Navigate to="/lawyer/dashboard" replace />} />
-        <Route path="/lawyer/dashboard" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
+        <Route path="/lawyer/dashboard" element={<ProtectedRoute><Suspense fallback={<LoadingSpinner />}><LawyerDashboard /></Suspense></ProtectedRoute>} />
         <Route path="/lawyer/dashboard/overview" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
         <Route path="/lawyer/dashboard/cases" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
         <Route path="/lawyer/dashboard/clients" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
@@ -121,7 +131,8 @@ function App() {
         
         {/* Catch all - redirect to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+        </Routes>
+      </Suspense>
     </div>
   );
 }

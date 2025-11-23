@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import DashboardHeader from '../../components/layout/DashboardHeader';
+import SEOHead from '../../components/SEOHead';
 
 // Default fallback data if API fails
 const fallbackLawyers = [];
@@ -266,6 +267,27 @@ function LawyerDirectory() {
     showAllFilters: false
   });
 
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Lawyer Directory",
+    "description": "Find qualified lawyers and legal professionals in your area",
+    "numberOfItems": filteredLawyers.length,
+    "itemListElement": filteredLawyers.map((lawyer, index) => ({
+      "@type": "Person",
+      "@id": `https://legalcity.com/lawyer/${lawyer.id}`,
+      "position": index + 1,
+      "name": lawyer.name,
+      "jobTitle": "Attorney",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": lawyer.city,
+        "addressRegion": lawyer.state
+      },
+      "knowsAbout": lawyer.practiceAreas
+    }))
+  };
+
   const practiceAreas = ['Business', 'Family Law', 'Criminal Defense', 'Personal Injury', 'Corporate Law', 'Libel & Slander'];
   const yearsOptions = ['1-5 years', '6-10 years', '11-15 years', '16+ years'];
   
@@ -351,6 +373,12 @@ function LawyerDirectory() {
 
   return (
     <div className="min-h-screen bg-white">
+      <SEOHead 
+        title="Lawyer Directory - Find Qualified Legal Professionals | Legal City"
+        description={`Browse our directory of ${lawyers.length} qualified lawyers and legal professionals. Find attorneys specializing in corporate law, family law, criminal defense, and more.`}
+        keywords="lawyer directory, find attorney, legal professionals, law firm directory, qualified lawyers, legal services"
+        structuredData={structuredData}
+      />
       {cameFromDashboard && <DashboardHeader />}
       {!cameFromDashboard && (
         <div className="pt-16"> {/* Add padding when using MainLayout header */}

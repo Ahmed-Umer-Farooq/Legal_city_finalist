@@ -67,7 +67,7 @@ passport.use(
         }
 
         // If account exists with password, block OAuth login for safety
-        if (userRecord && userRecord.password && userRecord.password !== '') {
+        if (userRecord && userRecord.password) {
           return done(null, false, { message: 'Account already exists with this email. Please login with your password.' });
         }
 
@@ -78,7 +78,7 @@ passport.use(
             email,
             email_verified: 1,
             google_id: profile.id,
-            password: '', // OAuth users don't need password
+            password: null, // OAuth users don't need password
             avatar: (profile.photos && profile.photos[0] && profile.photos[0].value) || null,
             profile_completed: 0, // Always require setup for new OAuth users
           };
@@ -144,7 +144,7 @@ passport.use(
         // Check if user/lawyer already exists
         let user = await db(tableName).where({ email }).first();
 
-        if (user && user.password && user.password !== '') {
+        if (user && user.password) {
           // Account exists with password, don't allow OAuth login
           return done(null, false, { message: 'Account already exists with this email. Please login with your password.' });
         }
@@ -156,7 +156,7 @@ passport.use(
             role: 'user', // Default to user for Facebook
             email_verified: 1,
             facebook_id: profile.id,
-            password: '', // OAuth users don't need password
+            password: null, // OAuth users don't need password
             profile_completed: 0, // Mark as incomplete
             is_verified: 0, // Pending until submit later or completion
           };

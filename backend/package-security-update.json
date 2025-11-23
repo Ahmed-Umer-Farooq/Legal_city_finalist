@@ -1,0 +1,17 @@
+{
+  "name": "@legal-city/backend",
+  "description": "Security updates for package.json - rename to package.json after review",
+  "devDependencies": {
+    "npm-audit-resolver": "^3.0.0"
+  },
+  "dependencies": {
+    "xss": "^1.0.14",
+    "validator": "^13.11.0",
+    "csurf": "^1.11.0"
+  },
+  "scripts": {
+    "security-audit": "npm audit --audit-level moderate",
+    "security-fix": "npm audit fix",
+    "security-check": "npm audit --audit-level high --production"
+  }
+}

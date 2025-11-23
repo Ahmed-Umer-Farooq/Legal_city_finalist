@@ -6,6 +6,7 @@ const cors = require('cors');
 const session = require('express-session');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const compression = require('compression');
 const passport = require('./config/passport');
 const { generateCSRFToken, getCSRFToken } = require('./utils/csrf');
 const authRoutes = require('./routes/auth');
@@ -15,37 +16,28 @@ const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5001;
 
-// Security middleware - DISABLED FOR DEVELOPMENT
-// app.use(helmet({
-//   contentSecurityPolicy: {
-//     directives: {
-//       defaultSrc: ["'self'"],
-//       styleSrc: ["'self'", "'unsafe-inline'", "https:"],
-//       scriptSrc: ["'self'", "'unsafe-inline'"],
-//       imgSrc: ["'self'", "data:", "https:"],
-//       connectSrc: ["'self'", "ws:", "wss:", "http://localhost:*", "https://localhost:*"],
-//     },
-//   },
-// }));
+// Enable compression for all responses
+app.use(compression());
 
-// Rate limiting - DISABLED FOR DEVELOPMENT
-// const limiter = rateLimit({
-//   windowMs: 15 * 60 * 1000, // 15 minutes
-//   max: 100, // limit each IP to 100 requests per windowMs
-//   message: 'Too many requests from this IP, please try again later.',
-//   standardHeaders: true,
-//   legacyHeaders: false,
-// });
-// app.use('/api/', limiter);
+// Cache static assets with environment-appropriate settings
+app.use(express.static('public', {
+  maxAge: process.env.NODE_ENV === 'production' ? '1y' : '0',
+  etag: true,
+  lastModified: true
+}));
 
-// // Stricter rate limiting for auth endpoints
-// const authLimiter = rateLimit({
-//   windowMs: 15 * 60 * 1000,
-//   max: 5,
-//   message: 'Too many authentication attempts, please try again later.',
-// });
-// app.use('/api/auth/login', authLimiter);
-// app.use('/api/auth/register', authLimiter);
+// Security middleware
+const { securityHeaders, generalLimiter, authLimiter } = require('./utils/security');
+
+if (process.env.NODE_ENV === 'production') {
+  app.use(securityHeaders);
+  app.use('/api/', generalLimiter);
+  app.use('/api/auth/login', authLimiter);
+  app.use('/api/auth/register', authLimiter);
+  app.use('/api/auth/forgot-password', authLimiter);
+}
+
+
 
 // Socket.io setup with CORS
 const io = socketIo(server, {
@@ -89,13 +81,17 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// CSRF token generation - DISABLED FOR DEVELOPMENT
-// if (process.env.NODE_ENV === 'production') {
-//   app.use(generateCSRFToken);
-// }
+// CSRF token generation
+if (process.env.NODE_ENV === 'production') {
+  app.use(generateCSRFToken);
+}
 
-// All security headers disabled for development
-console.log('🔧 Backend Security: ALL FEATURES DISABLED FOR DEVELOPMENT');
+// Security status
+if (process.env.NODE_ENV === 'production') {
+  console.log('🔒 Backend Security: ENABLED FOR PRODUCTION');
+} else {
+  console.log('🔧 Backend Security: DEVELOPMENT MODE - Limited security features');
+}
 
 // CSRF token endpoint
 app.get('/api/csrf-token', getCSRFToken);

@@ -2,7 +2,19 @@ const knex = require('knex');
 const knexConfig = require('./knexfile');
 
 const environment = process.env.NODE_ENV || 'development';
-const config = knexConfig[environment];
+const config = {
+  ...knexConfig[environment],
+  pool: {
+    min: 2,
+    max: 10,
+    acquireTimeoutMillis: 30000,
+    createTimeoutMillis: 30000,
+    destroyTimeoutMillis: 5000,
+    idleTimeoutMillis: 30000,
+    reapIntervalMillis: 1000,
+    createRetryIntervalMillis: 100
+  }
+};
 
 if (!config) {
   throw new Error(`No database configuration found for environment: ${environment}`);

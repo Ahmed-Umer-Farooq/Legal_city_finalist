@@ -13,7 +13,7 @@ const validateRegistration = (data) => {
 
   // Password validation: at least 8 characters, include uppercase, lowercase, number, and special character
   if (!data.password || data.password.length < 8 ||
-      !/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/.test(data.password)) {
+      !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(data.password)) {
     errors.password = 'Password must be at least 8 characters with uppercase, lowercase, number, and special character';
   }
 

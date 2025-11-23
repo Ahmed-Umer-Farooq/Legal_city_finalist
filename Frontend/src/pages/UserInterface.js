@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; 
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
+import SEOHead from '../components/SEOHead'; 
 
 /**
  * Sub-components (Icons & Logo)
@@ -193,9 +194,11 @@ function HeroSection({ currentLanguage, translations }) {
   return (
     <section className="relative w-full h-[500px] sm:h-[600px] bg-gray-900">
       <img
-        src="https://api.builder.io/api/v1/image/assets/TEMP/d12735386b9fab735739b6b5424336fcff2f69c9?width=2880"
-        alt="Lawyer and client shaking hands"
+        src="https://api.builder.io/api/v1/image/assets/TEMP/d12735386b9fab735739b6b5424336fcff2f69c9?width=1920"
+        alt="Professional lawyer consultation - Legal City"
         className="absolute inset-0 w-full h-full object-cover"
+        loading="eager"
+        fetchpriority="high"
       />
       <div className="absolute inset-0 bg-[rgba(90,90,90,0.20)]" />
 
@@ -266,6 +269,9 @@ function LawyerCard({
   id = 1,
 }) {
   const navigate = useNavigate();
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  
   return (
     <div className="w-full max-w-[380px] bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100">
       <div className="flex flex-col h-[520px]">
@@ -280,11 +286,20 @@ function LawyerCard({
         <div className="px-6 pb-4">
           <div className="flex gap-4">
             <div className="relative flex-shrink-0">
-              <img
-                src={image}
-                alt={name}
-                className="w-16 h-16 object-cover rounded-full border-3 border-gray-200 shadow-sm"
-              />
+              {!imageError ? (
+                <img
+                  src={image}
+                  alt={`${name} - ${category} lawyer`}
+                  className={`w-16 h-16 object-cover rounded-full border-3 border-gray-200 shadow-sm transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                  loading="lazy"
+                  onLoad={() => setImageLoaded(true)}
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <div className="w-16 h-16 bg-gray-200 rounded-full border-3 border-gray-200 shadow-sm flex items-center justify-center">
+                  <span className="text-gray-500 text-xs font-medium">{name.charAt(0)}</span>
+                </div>
+              )}
               <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white">
                 <div className="w-1.5 h-1.5 bg-white rounded-full mx-auto mt-1"></div>
               </div>
@@ -614,7 +629,10 @@ export default function UserInterface() {
       specialty: 'Specialty',
       cityStateZip: 'City, State or Zip',
       searchLawyers: 'Search Lawyers',
-      topFeaturesLawyers: 'Top Features lawyers near you'
+      topFeaturesLawyers: 'Top Features lawyers near you',
+      login: 'Login',
+      signup: 'Sign Up',
+      lawyerDirectory: 'Lawyer Directory'
     },
     ES: {
       findLawyer: 'Encontrar Abogado',
@@ -622,7 +640,10 @@ export default function UserInterface() {
       specialty: 'Especialidad',
       cityStateZip: 'Ciudad, Estado o Código Postal',
       searchLawyers: 'Buscar Abogados',
-      topFeaturesLawyers: 'Los mejores abogados cerca de ti'
+      topFeaturesLawyers: 'Los mejores abogados cerca de ti',
+      login: 'Iniciar Sesión',
+      signup: 'Registrarse',
+      lawyerDirectory: 'Directorio de Abogados'
     },
     FR: {
       findLawyer: 'Trouver un Avocat',
@@ -630,7 +651,10 @@ export default function UserInterface() {
       specialty: 'Spécialité',
       cityStateZip: 'Ville, État ou Code Postal',
       searchLawyers: 'Rechercher des Avocats',
-      topFeaturesLawyers: 'Les meilleurs avocats près de chez vous'
+      topFeaturesLawyers: 'Les meilleurs avocats près de chez vous',
+      login: 'Connexion',
+      signup: 'S\'inscrire',
+      lawyerDirectory: 'Annuaire des Avocats'
     },
     DE: {
       findLawyer: 'Anwalt Finden',
@@ -638,12 +662,39 @@ export default function UserInterface() {
       specialty: 'Fachgebiet',
       cityStateZip: 'Stadt, Bundesland oder PLZ',
       searchLawyers: 'Anwälte Suchen',
-      topFeaturesLawyers: 'Top Anwälte in Ihrer Nähe'
+      topFeaturesLawyers: 'Top Anwälte in Ihrer Nähe',
+      login: 'Anmelden',
+      signup: 'Registrieren',
+      lawyerDirectory: 'Anwaltsverzeichnis'
+    }
+  };
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Legal City",
+    "url": "https://legalcity.com",
+    "description": "Find qualified lawyers and legal professionals in your area",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://legalcity.com/lawyers?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Legal City",
+      "url": "https://legalcity.com"
     }
   };
 
   return (
     <>
+      <SEOHead 
+        title="Legal City - Find Qualified Lawyers & Legal Services"
+        description="Find qualified lawyers and legal professionals in your area. Connect with top-rated attorneys for corporate law, family law, criminal defense, and more legal services."
+        keywords="find lawyer, legal services, attorney directory, law firm, legal consultation, lawyer near me, legal advice, corporate law, family law, criminal defense"
+        structuredData={structuredData}
+      />
       <HeroSection currentLanguage={currentLanguage} translations={translations} />
       <LawyerCarousel />
     </>

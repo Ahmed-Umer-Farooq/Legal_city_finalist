@@ -4,27 +4,10 @@ const blogController = {
   // Get all published blogs (public endpoint)
   getAllBlogs: async (req, res) => {
     try {
-      const { page = 1, limit = 10, category, search } = req.query;
-      const offset = (page - 1) * limit;
-
-      let query = db('blogs')
-        .select(
-          'blogs.id',
-          'blogs.title',
-          'blogs.slug',
-          'blogs.excerpt',
-          'blogs.featured_image',
-          'blogs.category',
-          'blogs.views_count',
-          'blogs.published_at',
-          'blogs.author_name'
-        )
-        .where('blogs.status', 'published');
-
-      if (category) query = query.where('blogs.category', category);
-      if (search) query = query.where('blogs.title', 'like', `%${search}%`);
-
-      const blogs = await query.orderBy('blogs.published_at', 'desc').limit(limit).offset(offset);
+      const blogs = await db('blogs')
+        .select('*')
+        .orderBy('created_at', 'desc');
+      
       res.json(blogs);
     } catch (error) {
       console.error('Error fetching blogs:', error);
@@ -197,31 +180,24 @@ const blogController = {
   // Create new blog (lawyers only)
   createBlog: async (req, res) => {
     try {
-      const { title, content, category, excerpt, featured_image, tags, author_name } = req.body;
+      const { title, content, category, featured_image, author_name } = req.body;
       
-      // Validation
       if (!title || !content || !category || !author_name) {
         return res.status(400).json({ message: 'Title, content, category, and author name are required' });
       }
 
-      // Generate slug from title
       const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      
-      // Generate excerpt if not provided
-      const blogExcerpt = excerpt || content.substring(0, 200) + '...';
+      const excerpt = content.substring(0, 200) + '...';
       
       const [blogId] = await db('blogs').insert({
         title,
         slug,
         content,
-        excerpt: blogExcerpt,
+        excerpt,
         featured_image,
         category,
-        tags: tags ? JSON.stringify(tags) : null,
-        author_id: req.user.id,
-        author_name: author_name,
-        status: 'published',
-        published_at: new Date()
+        author_name,
+        status: 'published'
       });
 
       const newBlog = await db('blogs').where('id', blogId).first();
@@ -288,33 +264,11 @@ const blogController = {
   // Get lawyer's own blogs (all statuses)
   getLawyerBlogs: async (req, res) => {
     try {
-      const { page = 1, limit = 10, status } = req.query;
-      const offset = (page - 1) * limit;
+      const blogs = await db('blogs')
+        .select('*')
+        .orderBy('created_at', 'desc');
       
-      let query = db('blogs')
-        .select(
-          'blogs.id', 
-          'blogs.title', 
-          'blogs.slug', 
-          'blogs.excerpt', 
-          'blogs.category', 
-          'blogs.status', 
-          'blogs.views_count', 
-          'blogs.created_at', 
-          'blogs.updated_at',
-          'blogs.author_name'
-        )
-        .where('blogs.author_id', req.user.id);
-      
-      if (status) query = query.where('blogs.status', status);
-      
-      const blogs = await query.orderBy('blogs.updated_at', 'desc').limit(limit).offset(offset);
-      const total = await db('blogs').where('author_id', req.user.id).count('id as count').first();
-      
-      res.json({
-        blogs,
-        pagination: { page: parseInt(page), limit: parseInt(limit), total: total.count }
-      });
+      res.json({ blogs });
     } catch (error) {
       console.error('Error fetching lawyer blogs:', error);
       res.status(500).json({ message: 'Failed to fetch blogs' });

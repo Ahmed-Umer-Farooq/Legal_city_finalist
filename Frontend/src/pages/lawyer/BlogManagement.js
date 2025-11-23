@@ -53,9 +53,10 @@ const BlogManagement = () => {
   const fetchBlogs = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/blogs');
+      const response = await api.get('/blogs/lawyer');
+      console.log('Blog fetch response:', response.data);
       // Handle different response formats
-      const blogData = response.data?.data || response.data || [];
+      const blogData = response.data?.blogs || response.data?.data || response.data || [];
       setBlogs(Array.isArray(blogData) ? blogData : []);
     } catch (error) {
       console.error('Error fetching blogs:', error);
@@ -138,11 +139,17 @@ const BlogManagement = () => {
       console.log('📝 Creating blog with data:', blogData);
       const response = await api.post('/blogs', blogData);
       console.log('✅ Blog created successfully:', response.data);
-      alert('Blog created successfully!');
-      setShowCreateForm(false);
-      setFormData({ title: '', content: '', category: '', featured_image: '', author_name: '' });
-      setSelectedFile(null);
-      fetchBlogs();
+      
+      // Backend returns the blog object directly, not a success wrapper
+      if (response.data && response.data.id) {
+        alert('Blog created successfully!');
+        setShowCreateForm(false);
+        setFormData({ title: '', content: '', category: '', featured_image: '', author_name: '' });
+        setSelectedFile(null);
+        fetchBlogs();
+      } else {
+        alert('Blog created but response format unexpected');
+      }
     } catch (error) {
       console.error('❌ Error creating blog:', error);
       console.log('📊 Response status:', error.response?.status);

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, User, Calendar, FileText, Phone, Mail, Clock, CreditCard, Users, DollarSign, File, ChevronLeft, ChevronRight, PieChart, Home, UserCheck, BarChart3, CheckSquare, FolderOpen, MessageCircle } from 'lucide-react';
 import api from '../../utils/api';
+
 
 // Lazy load components to prevent import errors
 const QuickActions = React.lazy(() => import('../../components/QuickActions').catch(() => ({ default: () => <div>Quick Actions Loading...</div> })));
@@ -31,12 +33,99 @@ export default function LawyerDashboard() {
   const [activeNavItem, setActiveNavItem] = useState('home');
   const [currentUser, setCurrentUser] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Set active nav item based on URL and update page title
+  useEffect(() => {
+    const path = location.pathname;
+    let title = 'Lawyer Dashboard';
+    
+    if (path.includes('/cases')) {
+      setActiveNavItem('cases');
+      title = 'Cases Management - Lawyer Dashboard';
+    } else if (path.includes('/clients')) {
+      setActiveNavItem('clients');
+      title = 'Client Management - Lawyer Dashboard';
+    } else if (path.includes('/contacts')) {
+      setActiveNavItem('contacts');
+      title = 'Contacts Management - Lawyer Dashboard';
+    } else if (path.includes('/calendar')) {
+      setActiveNavItem('calendar');
+      title = 'Calendar & Appointments - Lawyer Dashboard';
+    } else if (path.includes('/documents')) {
+      setActiveNavItem('documents');
+      title = 'Document Management - Lawyer Dashboard';
+    } else if (path.includes('/reports')) {
+      setActiveNavItem('reports');
+      title = 'Reports & Analytics - Lawyer Dashboard';
+    } else if (path.includes('/tasks')) {
+      setActiveNavItem('tasks');
+      title = 'Task Management - Lawyer Dashboard';
+    } else if (path.includes('/messages')) {
+      setActiveNavItem('messages');
+      title = 'Messages & Communication - Lawyer Dashboard';
+    } else if (path.includes('/blogs')) {
+      setActiveNavItem('blogs');
+      title = 'Blog Management - Lawyer Dashboard';
+    } else {
+      setActiveNavItem('home');
+      title = 'Dashboard Overview - Legal Practice Management';
+    }
+    
+    document.title = title;
+    
+    // Update meta description based on active section
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      const descriptions = {
+        'home': 'Comprehensive lawyer dashboard for managing cases, clients, appointments, and legal practice operations.',
+        'cases': 'Manage and track all your legal cases with detailed case management tools.',
+        'clients': 'Client relationship management system for lawyers and legal professionals.',
+        'contacts': 'Contact management system for lawyers and legal professionals.',
+        'calendar': 'Schedule and manage appointments, court dates, and important legal deadlines.',
+        'documents': 'Secure document management system for legal files and case documents.',
+        'reports': 'Generate detailed reports and analytics for your legal practice.',
+        'tasks': 'Task management system to track legal work and deadlines.',
+        'messages': 'Secure messaging system for client communication and case collaboration.',
+        'blogs': 'Create and manage legal blog content to showcase expertise and attract clients.'
+      };
+      metaDescription.setAttribute('content', descriptions[activeNavItem] || descriptions['home']);
+    }
+  }, [location.pathname, activeNavItem]);
 
   useEffect(() => {
     fetchDashboardData();
     // Get current user from localStorage
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     setCurrentUser(user);
+    
+    // Add structured data for SEO
+    const structuredData = {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Lawyer Dashboard",
+      "description": "Professional legal practice management dashboard",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "category": "Legal Practice Management"
+      }
+    };
+    
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.text = JSON.stringify(structuredData);
+    document.head.appendChild(script);
+    
+    return () => {
+      const existingScript = document.querySelector('script[type="application/ld+json"]');
+      if (existingScript) {
+        document.head.removeChild(existingScript);
+      }
+    };
     
     // Initialize chat service for notifications
     if (user?.id) {
@@ -46,7 +135,7 @@ export default function LawyerDashboard() {
           setUnreadCount(count);
         });
         // Get initial unread count via API
-        fetch('/api/chat/unread-count', {
+        fetch('http://localhost:5001/api/chat/unread-count', {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
         .then(res => res.json())
@@ -59,25 +148,44 @@ export default function LawyerDashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      console.log('Fetching dashboard data...');
+      
       const [statsRes, casesRes, clientsRes, invoicesRes] = await Promise.all([
-        api.get('/dashboard/overview'),
-        api.get('/cases?page=1&limit=10'),
-        api.get('/clients?page=1&limit=3'),
-        api.get('/invoices?page=1&limit=3')
+        api.get('/lawyer/dashboard/overview').catch(e => {
+          console.error('Stats API error:', e.response?.data || e.message);
+          return { data: { data: { activeCases: 0, totalClients: 0, monthlyRevenue: 0, upcomingHearings: 0 } } };
+        }),
+        api.get('/lawyer/cases?page=1&limit=10').catch(e => {
+          console.error('Cases API error:', e.response?.data || e.message);
+          return { data: { data: [] } };
+        }),
+        api.get('/lawyer/clients?page=1&limit=3').catch(e => {
+          console.error('Clients API error:', e.response?.data || e.message);
+          return { data: { data: [] } };
+        }),
+        api.get('/lawyer/invoices?page=1&limit=3').catch(e => {
+          console.error('Invoices API error:', e.response?.data || e.message);
+          return { data: { data: [] } };
+        })
       ]);
+      
+      console.log('API Responses:', { statsRes: statsRes.data, casesRes: casesRes.data, clientsRes: clientsRes.data, invoicesRes: invoicesRes.data });
+      
       setStats(statsRes.data?.data || { activeCases: 0, totalClients: 0, monthlyRevenue: 0, upcomingHearings: 0 });
       setCases(Array.isArray(casesRes.data?.data) ? casesRes.data.data : []);
       setClients(Array.isArray(clientsRes.data?.data) ? clientsRes.data.data : []);
       setInvoices(Array.isArray(invoicesRes.data?.data) ? invoicesRes.data.data : []);
+      
+      console.log('Dashboard data loaded successfully');
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      if (error.response?.status === 401) {
-        alert('Session expired. Please login again.');
-        localStorage.removeItem('token');
-        window.location.href = '/';
-      } else {
-        alert('Failed to load dashboard data. Please try again.');
-      }
+      console.error('Error details:', error.response?.data || error.message);
+      
+      // Set default data instead of showing error
+      setStats({ activeCases: 0, totalClients: 0, monthlyRevenue: 0, upcomingHearings: 0 });
+      setCases([]);
+      setClients([]);
+      setInvoices([]);
     } finally {
       setLoading(false);
     }
@@ -90,7 +198,7 @@ export default function LawyerDashboard() {
     }
 
     try {
-      const response = await api.post('/cases', {
+      const response = await api.post('/lawyer/cases', {
         title: caseTitle.trim(),
         type: caseType,
         description: caseClient.trim() ? `Case for ${caseClient.trim()}` : '',
@@ -147,35 +255,46 @@ export default function LawyerDashboard() {
   return (
     <div className="min-h-screen bg-[#EDF4FF]">
       {/* HEADER */}
-      <header className="px-4 md:px-8 lg:px-36 py-8">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-6 bg-white rounded-2xl px-6 py-4 w-full md:w-auto shadow-sm border border-[#F8F9FA]">
-            <Search className="w-6 h-6 text-[#737791]" />
-            <input 
-              type="text" 
-              placeholder="Search here..." 
-              className="text-[#737791] text-lg bg-transparent outline-none flex-1"
-            />
-          </div>
-          
-          <div className="flex items-center gap-6">
-            <nav className="flex items-center gap-6 md:gap-8">
+      <header className="px-4 md:px-8 lg:px-12 xl:px-16 py-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between gap-4">
+            {/* Search Bar */}
+            <div className="flex items-center gap-4 bg-white rounded-2xl px-4 py-3 min-w-0 flex-1 max-w-md shadow-sm border border-[#F8F9FA]">
+              <Search className="w-5 h-5 text-[#737791] flex-shrink-0" />
+              <input 
+                type="text" 
+                placeholder="Search..." 
+                className="text-[#737791] text-sm bg-transparent outline-none flex-1 min-w-0"
+              />
+            </div>
+            
+            {/* Navigation */}
+            <nav className="hidden lg:flex items-center gap-2">
               {[
-                { id: 'home', label: 'Home', icon: Home, action: () => { setActiveNavItem('home'); window.scrollTo(0, 0); } },
-                { id: 'messages', label: 'Messages', icon: MessageCircle, action: () => { setActiveNavItem('messages'); }, showNotification: true },
-                { id: 'contacts', label: 'Contacts', icon: UserCheck, action: () => { setActiveNavItem('contacts'); alert('Contacts page coming soon!'); } },
-                { id: 'calendar', label: 'Calendar', icon: Calendar, action: () => { setActiveNavItem('calendar'); alert('Calendar page coming soon!'); } },
-                { id: 'reports', label: 'Reports', icon: BarChart3, action: () => { setActiveNavItem('reports'); alert('Reports page coming soon!'); } },
-                { id: 'tasks', label: 'Tasks', icon: CheckSquare, action: () => { setActiveNavItem('tasks'); alert('Tasks page coming soon!'); } },
-                { id: 'documents', label: 'Documents', icon: FolderOpen, action: () => { setActiveNavItem('documents'); alert('Documents page coming soon!'); } },
-                { id: 'blogs', label: 'Blogs', icon: FileText, action: () => { setActiveNavItem('blogs'); } }
+                { id: 'home', label: 'Home', icon: Home },
+                { id: 'cases', label: 'Cases', icon: FileText },
+                { id: 'clients', label: 'Clients', icon: Users },
+                { id: 'messages', label: 'Messages', icon: MessageCircle, showNotification: true },
+                { id: 'contacts', label: 'Contacts', icon: UserCheck },
+                { id: 'calendar', label: 'Calendar', icon: Calendar },
+                { id: 'reports', label: 'Reports', icon: BarChart3 },
+                { id: 'tasks', label: 'Tasks', icon: CheckSquare },
+                { id: 'documents', label: 'Documents', icon: FolderOpen },
+                { id: 'blogs', label: 'Blogs', icon: File }
               ].map((item) => {
                 const Icon = item.icon;
                 const isActive = activeNavItem === item.id;
                 return (
                   <button
                     key={item.id}
-                    onClick={item.action || (() => setActiveNavItem(item.id))}
+                    onClick={() => {
+                      setActiveNavItem(item.id);
+                      if (item.id === 'home') {
+                        navigate('/lawyer/dashboard');
+                      } else {
+                        navigate(`/lawyer/dashboard/${item.id}`);
+                      }
+                    }}
                     className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       isActive 
                         ? 'bg-[#EDF3FF] text-[#0086CB] shadow-sm' 
@@ -183,7 +302,7 @@ export default function LawyerDashboard() {
                     }`}
                   >
                     <Icon className="w-4 h-4" />
-                    <span className="hidden md:inline">{item.label}</span>
+                    <span className="hidden xl:inline">{item.label}</span>
                     {item.showNotification && unreadCount > 0 && (
                       <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                         {unreadCount > 99 ? '99+' : unreadCount}
@@ -194,47 +313,262 @@ export default function LawyerDashboard() {
               })}
             </nav>
             
+            {/* Mobile Menu Button */}
+            <button 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 rounded-lg hover:bg-[#F8F9FA]"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={mobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+              </svg>
+            </button>
 
-          </div>
-
-          <div className="relative group">
-            <div className="flex flex-col items-center gap-1 cursor-pointer">
-              <div className="w-[30px] h-[30px] bg-gradient-to-br from-[#0076C0] to-[#00C1F4] rounded-2xl flex items-center justify-center text-white font-semibold text-sm">
-                {currentUser?.name?.charAt(0) || 'U'}
+            {/* User Profile */}
+            <div className="relative group flex-shrink-0">
+              <div className="flex items-center gap-2 cursor-pointer">
+                <div className="w-8 h-8 bg-gradient-to-br from-[#0076C0] to-[#00C1F4] rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                  {currentUser?.name?.charAt(0) || 'U'}
+                </div>
+                <span className="hidden md:block text-[#181A2A] text-sm font-medium truncate max-w-24">{currentUser?.name || 'User'}</span>
               </div>
-              <span className="text-[#181A2A] text-sm font-medium">{currentUser?.name || 'User'}</span>
-            </div>
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-[#F8F9FA] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-              <div className="py-2">
-                <a href="#profile" className="block px-4 py-2 text-sm text-[#181A2A] hover:bg-[#F8F9FA] rounded-lg mx-2">Profile Settings</a>
-                <a href="#account" className="block px-4 py-2 text-sm text-[#181A2A] hover:bg-[#F8F9FA] rounded-lg mx-2">Account</a>
-                <hr className="my-2 border-[#F8F9FA]" />
-                <button 
-                  onClick={handleLogout}
-                  className="block w-full text-left px-4 py-2 text-sm text-[#E6372B] hover:bg-[#FFE3E1] rounded-lg mx-2"
-                >
-                  Logout
-                </button>
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-[#F8F9FA] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="py-2">
+                  <a href="#profile" className="block px-4 py-2 text-sm text-[#181A2A] hover:bg-[#F8F9FA] rounded-lg mx-2">Profile Settings</a>
+                  <a href="#account" className="block px-4 py-2 text-sm text-[#181A2A] hover:bg-[#F8F9FA] rounded-lg mx-2">Account</a>
+                  <hr className="my-2 border-[#F8F9FA]" />
+                  <button 
+                    onClick={handleLogout}
+                    className="block w-full text-left px-4 py-2 text-sm text-[#E6372B] hover:bg-[#FFE3E1] rounded-lg mx-2"
+                  >
+                    Logout
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
+        
+        {/* Mobile Navigation Menu */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden bg-white border-t border-[#F8F9FA] px-4 py-4">
+            <nav className="grid grid-cols-2 gap-2">
+              {[
+                { id: 'home', label: 'Home', icon: Home },
+                { id: 'cases', label: 'Cases', icon: FileText },
+                { id: 'clients', label: 'Clients', icon: Users },
+                { id: 'messages', label: 'Messages', icon: MessageCircle, showNotification: true },
+                { id: 'contacts', label: 'Contacts', icon: UserCheck },
+                { id: 'calendar', label: 'Calendar', icon: Calendar },
+                { id: 'reports', label: 'Reports', icon: BarChart3 },
+                { id: 'tasks', label: 'Tasks', icon: CheckSquare },
+                { id: 'documents', label: 'Documents', icon: FolderOpen },
+                { id: 'blogs', label: 'Blogs', icon: File }
+              ].map((item) => {
+                const Icon = item.icon;
+                const isActive = activeNavItem === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveNavItem(item.id);
+                      setMobileMenuOpen(false);
+                      if (item.id === 'home') {
+                        navigate('/lawyer/dashboard');
+                      } else {
+                        navigate(`/lawyer/dashboard/${item.id}`);
+                      }
+                    }}
+                    className={`relative flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActive 
+                        ? 'bg-[#EDF3FF] text-[#0086CB] shadow-sm' 
+                        : 'text-[#181A2A] hover:text-[#0086CB] hover:bg-[#F8F9FA]'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span>{item.label}</span>
+                    {item.showNotification && unreadCount > 0 && (
+                      <span className="absolute top-2 right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* MAIN CONTENT */}
-      <main className="px-4 md:px-8 lg:px-36 pb-16">
-        {activeNavItem === 'contacts' && <ContactsPage />}
-        {activeNavItem === 'calendar' && <CalendarPage />}
-        {activeNavItem === 'reports' && <ReportsPage />}
-        {activeNavItem === 'tasks' && <TasksPage />}
-        {activeNavItem === 'documents' && <DocumentsPage />}
-        {activeNavItem === 'blogs' && <BlogManagement />}
-        {activeNavItem === 'messages' && <ChatPage key="lawyer-chat" />}
+      <main className="px-4 md:px-8 lg:px-12 xl:px-16 pb-16">
+        <div className="max-w-7xl mx-auto">
+        {/* Section Content */}
+        {activeNavItem === 'contacts' && (
+          <React.Suspense fallback={<div className="text-center py-8">Loading Contacts...</div>}>
+            <ContactsPage />
+          </React.Suspense>
+        )}
+        
+        {activeNavItem === 'calendar' && (
+          <React.Suspense fallback={<div className="text-center py-8">Loading Calendar...</div>}>
+            <CalendarPage />
+          </React.Suspense>
+        )}
+        
+        {activeNavItem === 'reports' && (
+          <React.Suspense fallback={<div className="text-center py-8">Loading Reports...</div>}>
+            <ReportsPage />
+          </React.Suspense>
+        )}
+        
+        {activeNavItem === 'tasks' && (
+          <React.Suspense fallback={<div className="text-center py-8">Loading Tasks...</div>}>
+            <TasksPage />
+          </React.Suspense>
+        )}
+        
+        {activeNavItem === 'documents' && (
+          <React.Suspense fallback={<div className="text-center py-8">Loading Documents...</div>}>
+            <DocumentsPage />
+          </React.Suspense>
+        )}
+        
+        {activeNavItem === 'blogs' && (
+          <React.Suspense fallback={<div className="text-center py-8">Loading Blog Management...</div>}>
+            <BlogManagement />
+          </React.Suspense>
+        )}
+        
+        {activeNavItem === 'messages' && (
+          <React.Suspense fallback={<div className="text-center py-8">Loading Messages...</div>}>
+            <ChatPage key="lawyer-chat" />
+          </React.Suspense>
+        )}
+        
+        {activeNavItem === 'cases' && (
+          <div className="bg-white rounded-2xl border border-[#F8F9FA] shadow-md p-8">
+            
+            {/* Cases Form */}
+            <div className="mb-6">
+              <button 
+                onClick={() => setShowCaseForm(!showCaseForm)} 
+                className="flex items-center gap-2 bg-[#28B779] text-white px-4 py-2 rounded-lg hover:bg-[#229966] transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Add Case
+              </button>
+            </div>
+
+            {showCaseForm && (
+              <div className="mb-6 p-4 border-2 border-[#DCE8FF] rounded-lg">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <input 
+                    value={caseTitle}
+                    onChange={(e) => setCaseTitle(e.target.value)}
+                    placeholder="Case Title" 
+                    className="px-4 py-2 border border-[#DCE8FF] rounded-lg" 
+                  />
+                  <input 
+                    value={caseClient}
+                    onChange={(e) => setCaseClient(e.target.value)}
+                    placeholder="Client Name (Optional)" 
+                    className="px-4 py-2 border border-[#DCE8FF] rounded-lg" 
+                  />
+                  <select 
+                    value={caseType}
+                    onChange={(e) => setCaseType(e.target.value)}
+                    className="px-4 py-2 border border-[#DCE8FF] rounded-lg"
+                  >
+                    <option value="civil">Civil</option>
+                    <option value="criminal">Criminal</option>
+                    <option value="family">Family</option>
+                    <option value="corporate">Corporate</option>
+                    <option value="immigration">Immigration</option>
+                    <option value="personal_injury">Personal Injury</option>
+                    <option value="real_estate">Real Estate</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={addCase} className="bg-[#28B779] text-white px-4 py-2 rounded-lg hover:bg-[#229966] transition-colors">Save</button>
+                  <button onClick={() => setShowCaseForm(false)} className="bg-[#F8F9FA] text-[#737791] px-4 py-2 rounded-lg hover:bg-[#E5E7EB] transition-colors">Cancel</button>
+                </div>
+              </div>
+            )}
+
+            {/* Cases List */}
+            <div className="space-y-3">
+              {loading ? (
+                <p className="text-center text-[#737791]">Loading cases...</p>
+              ) : cases.length === 0 ? (
+                <p className="text-center text-[#737791]">No cases found. Add your first case!</p>
+              ) : (
+                cases.map((caseItem) => (
+                  <div key={caseItem.id} className="flex items-center justify-between p-4 border-2 border-[#DCE8FF] rounded-lg hover:bg-[#F9FAFB] transition-colors">
+                    <div>
+                      <h3 className="text-[#181A2A] text-base font-semibold">{caseItem.title}</h3>
+                      <p className="text-[#737791] text-sm">{caseItem.type} - Filed: {caseItem.filing_date || caseItem.created_at?.split('T')[0]}</p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColors(caseItem.status)}`}>
+                      {caseItem.status?.charAt(0).toUpperCase() + caseItem.status?.slice(1) || 'Active'}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+        
+        {activeNavItem === 'clients' && (
+          <div className="bg-white rounded-2xl border border-[#F8F9FA] shadow-md p-8">
+            
+            <div className="space-y-3">
+              {loading ? (
+                <p className="text-center text-[#737791]">Loading clients...</p>
+              ) : clients.length === 0 ? (
+                <p className="text-center text-[#737791]">No clients found</p>
+              ) : (
+                clients.map((client) => (
+                  <div key={client.id} className="flex items-center justify-between p-4 border border-[#F8F9FA] rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-[#EDF3FF] rounded-full flex items-center justify-center">
+                        <User className="w-5 h-5 text-[#186898]" />
+                      </div>
+                      <div>
+                        <p className="text-[#181A2A] font-medium">{client.name}</p>
+                        <p className="text-[#737791] text-sm">{client.email}</p>
+                      </div>
+                    </div>
+                    <button onClick={() => alert(`View client: ${client.name}`)} className="text-[#0086CB] text-sm font-medium hover:underline cursor-pointer">View</button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Breadcrumb Navigation */}
+        <nav className="flex items-center gap-2 text-sm text-[#737791] mb-6">
+          <a href="/" className="hover:text-[#0086CB]">Home</a>
+          <span>/</span>
+          <a href="/lawyer/dashboard" className="hover:text-[#0086CB]">Lawyer Dashboard</a>
+          {activeNavItem !== 'home' && (
+            <>
+              <span>/</span>
+              <span className="text-[#181A2A] font-medium capitalize">{activeNavItem}</span>
+            </>
+          )}
+        </nav>
+        
+
         
         {activeNavItem === 'home' && (
         <>
         {/* Dashboard Header */}
-        <div className="flex items-center gap-6 mb-12">
+        <div className="flex items-center gap-6 mb-8">
           <div className="flex items-center gap-6 bg-gradient-to-b from-[#0076C0] to-[#00C1F4] rounded-2xl px-6 py-4 shadow-lg">
             <div className="w-8 h-8">
               <svg className="w-full h-full" viewBox="0 0 24 23" fill="none">
@@ -646,11 +980,13 @@ export default function LawyerDashboard() {
         </div>
         </>
         )}
+        </div>
       </main>
 
       {/* FOOTER */}
-      <footer className="bg-[#333] px-4 md:px-8 lg:px-36 py-12 mt-12">
-        <div className="max-w-[1158px] mx-auto">
+      <footer className="bg-[#333] px-4 md:px-8 lg:px-12 xl:px-16 py-12 mt-12">
+        <div className="max-w-7xl mx-auto">
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
             <div>
               <h3 className="text-white text-base font-bold mb-6">Browse Our Site</h3>

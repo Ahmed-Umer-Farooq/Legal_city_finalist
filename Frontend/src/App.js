@@ -62,8 +62,19 @@ function App() {
         <Route path="/google-lawyer-setup" element={<GoogleLawyerSetup />} />
         <Route path="/logout" element={<Logout />} />
         
-        {/* Dashboard routes - No header/footer */}
+        {/* SEO-Friendly Lawyer Dashboard Routes */}
         <Route path="/lawyer-dashboard" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
+        <Route path="/lawyer/dashboard" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
+        <Route path="/lawyer/dashboard/overview" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
+        <Route path="/lawyer/dashboard/cases" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
+        <Route path="/lawyer/dashboard/clients" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
+        <Route path="/lawyer/dashboard/contacts" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
+        <Route path="/lawyer/dashboard/calendar" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
+        <Route path="/lawyer/dashboard/documents" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
+        <Route path="/lawyer/dashboard/reports" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
+        <Route path="/lawyer/dashboard/tasks" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
+        <Route path="/lawyer/dashboard/messages" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
+        <Route path="/lawyer/dashboard/blogs" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
         <Route path="/lawyer-dashboard/chatapp" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
         <Route path="/user-dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
         <Route path="/admin-dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />

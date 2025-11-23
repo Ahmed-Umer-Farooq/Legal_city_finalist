@@ -23,6 +23,7 @@ const Blog = lazy(() => import('./pages/userdashboard/Blog'));
 const BlogPage = lazy(() => import('./pages/Blogs/blogs'));
 const BlogDetail = lazy(() => import('./pages/Blogs/BlogDetail'));
 const QAPage = lazy(() => import('./pages/public/QAPage'));
+const ContactUs = lazy(() => import('./pages/ContactUs'));
 const Messages = lazy(() => import('./pages/userdashboard/Messages'));
 const Directory = lazy(() => import('./pages/userdashboard/Directory'));
 const Forms = lazy(() => import('./pages/userdashboard/Forms'));
@@ -127,6 +128,7 @@ function App() {
           <Route path="/blogs" element={<BlogPage />} />
           <Route path="/blog/:id" element={<BlogDetail />} />
           <Route path="/qa" element={<QAPage />} />
+          <Route path="/contact-us" element={<ContactUs />} />
         </Route>
         
         {/* Catch all - redirect to home */}

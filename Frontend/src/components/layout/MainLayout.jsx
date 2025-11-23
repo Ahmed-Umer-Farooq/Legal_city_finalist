@@ -217,6 +217,22 @@ function Header({ currentLanguage, setCurrentLanguage, translations }) {
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"></div>
               )}
             </a>
+            
+            <a 
+              href="/contact-us"
+              onClick={(e) => { e.preventDefault(); navigate('/contact-us'); }}
+              className={`flex items-center text-sm gap-2 transition-all duration-200 px-3 py-2 relative font-medium ${
+                isActive('/contact-us') 
+                  ? 'text-white' 
+                  : 'text-white/90 hover:text-white'
+              }`}
+              aria-current={isActive('/contact-us') ? 'page' : undefined}
+            >
+              <span>Contact Us</span>
+              {isActive('/contact-us') && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"></div>
+              )}
+            </a>
           </div>
         </div>
 
@@ -353,6 +369,16 @@ function Header({ currentLanguage, setCurrentLanguage, translations }) {
               role="menuitem"
             >
               Free Q&A
+            </a>
+            <a
+              href="/contact-us"
+              onClick={(e) => { e.preventDefault(); navigate('/contact-us'); setShowMobileMenu(false); }}
+              className={`block px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                isActive('/contact-us') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'
+              }`}
+              role="menuitem"
+            >
+              Contact Us
             </a>
             <div className="border-t border-gray-200 pt-2 mt-2">
               <button

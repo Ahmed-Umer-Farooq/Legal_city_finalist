@@ -17,6 +17,7 @@ const DocumentsPage = React.lazy(() => import('./DocumentsPage').catch(() => ({ 
 const BlogManagement = React.lazy(() => import('./BlogManagement').catch(() => ({ default: () => <div>Blog Management coming soon...</div> })));
 const ChatPage = React.lazy(() => import('../../pages/userdashboard/ChatPage').catch(() => ({ default: () => <div>Chat coming soon...</div> })));
 const ProfileSettings = React.lazy(() => import('./ProfileSettings').catch(() => ({ default: () => <div>Profile Settings coming soon...</div> })));
+const AccountSettings = React.lazy(() => import('./AccountSettings').catch(() => ({ default: () => <div>Account Settings coming soon...</div> })));
 
 export default function LawyerDashboard() {
   const [showCaseForm, setShowCaseForm] = useState(false);
@@ -75,6 +76,9 @@ export default function LawyerDashboard() {
     } else if (path.includes('/profile')) {
       setActiveNavItem('profile');
       title = 'Profile Settings - Lawyer Dashboard';
+    } else if (path.includes('/account')) {
+      setActiveNavItem('account');
+      title = 'Account Settings - Lawyer Dashboard';
     } else {
       setActiveNavItem('home');
       title = 'Dashboard Overview - Legal Practice Management';
@@ -345,7 +349,12 @@ export default function LawyerDashboard() {
                   >
                     Profile Settings
                   </button>
-                  <a href="#account" className="block px-4 py-2 text-sm text-[#181A2A] hover:bg-[#F8F9FA] rounded-lg mx-2">Account</a>
+                  <button 
+                    onClick={() => { setActiveNavItem('account'); navigate('/lawyer/dashboard/account'); }}
+                    className="block w-full text-left px-4 py-2 text-sm text-[#181A2A] hover:bg-[#F8F9FA] rounded-lg mx-2"
+                  >
+                    Account
+                  </button>
                   <hr className="my-2 border-[#F8F9FA]" />
                   <button 
                     onClick={handleLogout}
@@ -459,6 +468,12 @@ export default function LawyerDashboard() {
         {activeNavItem === 'profile' && (
           <React.Suspense fallback={<div className="text-center py-8">Loading Profile Settings...</div>}>
             <ProfileSettings />
+          </React.Suspense>
+        )}
+        
+        {activeNavItem === 'account' && (
+          <React.Suspense fallback={<div className="text-center py-8">Loading Account Settings...</div>}>
+            <AccountSettings />
           </React.Suspense>
         )}
         

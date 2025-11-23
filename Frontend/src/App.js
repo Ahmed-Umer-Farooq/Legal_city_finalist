@@ -76,6 +76,7 @@ function App() {
         <Route path="/lawyer/dashboard/tasks" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
         <Route path="/lawyer/dashboard/messages" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
         <Route path="/lawyer/dashboard/blogs" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
+        <Route path="/lawyer/dashboard/profile" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
         <Route path="/lawyer-dashboard/chatapp" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
         <Route path="/user-dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
         <Route path="/admin-dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />

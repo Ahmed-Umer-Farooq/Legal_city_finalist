@@ -16,6 +16,7 @@ const TasksPage = React.lazy(() => import('./TasksPage').catch(() => ({ default:
 const DocumentsPage = React.lazy(() => import('./DocumentsPage').catch(() => ({ default: () => <div>Documents coming soon...</div> })));
 const BlogManagement = React.lazy(() => import('./BlogManagement').catch(() => ({ default: () => <div>Blog Management coming soon...</div> })));
 const ChatPage = React.lazy(() => import('../../pages/userdashboard/ChatPage').catch(() => ({ default: () => <div>Chat coming soon...</div> })));
+const ProfileSettings = React.lazy(() => import('./ProfileSettings').catch(() => ({ default: () => <div>Profile Settings coming soon...</div> })));
 
 export default function LawyerDashboard() {
   const [showCaseForm, setShowCaseForm] = useState(false);
@@ -71,6 +72,9 @@ export default function LawyerDashboard() {
     } else if (path.includes('/blogs')) {
       setActiveNavItem('blogs');
       title = 'Blog Management - Lawyer Dashboard';
+    } else if (path.includes('/profile')) {
+      setActiveNavItem('profile');
+      title = 'Profile Settings - Lawyer Dashboard';
     } else {
       setActiveNavItem('home');
       title = 'Dashboard Overview - Legal Practice Management';
@@ -335,7 +339,12 @@ export default function LawyerDashboard() {
               </div>
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-[#F8F9FA] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                 <div className="py-2">
-                  <a href="#profile" className="block px-4 py-2 text-sm text-[#181A2A] hover:bg-[#F8F9FA] rounded-lg mx-2">Profile Settings</a>
+                  <button 
+                    onClick={() => { setActiveNavItem('profile'); navigate('/lawyer/dashboard/profile'); }}
+                    className="block w-full text-left px-4 py-2 text-sm text-[#181A2A] hover:bg-[#F8F9FA] rounded-lg mx-2"
+                  >
+                    Profile Settings
+                  </button>
                   <a href="#account" className="block px-4 py-2 text-sm text-[#181A2A] hover:bg-[#F8F9FA] rounded-lg mx-2">Account</a>
                   <hr className="my-2 border-[#F8F9FA]" />
                   <button 
@@ -444,6 +453,12 @@ export default function LawyerDashboard() {
         {activeNavItem === 'messages' && (
           <React.Suspense fallback={<div className="text-center py-8">Loading Messages...</div>}>
             <ChatPage key="lawyer-chat" />
+          </React.Suspense>
+        )}
+        
+        {activeNavItem === 'profile' && (
+          <React.Suspense fallback={<div className="text-center py-8">Loading Profile Settings...</div>}>
+            <ProfileSettings />
           </React.Suspense>
         )}
         

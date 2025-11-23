@@ -26,6 +26,7 @@ function Header({ currentLanguage, setCurrentLanguage, translations }) {
   const location = useLocation();
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [showDirectoryMenu, setShowDirectoryMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -74,6 +75,17 @@ function Header({ currentLanguage, setCurrentLanguage, translations }) {
     navigate('/register');
   };
 
+  // Close mobile menu on outside click
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showMobileMenu && !event.target.closest('nav')) {
+        setShowMobileMenu(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showMobileMenu]);
+
   const handleLanguageSelect = (language) => {
     setCurrentLanguage(language.code);
     setShowLanguageMenu(false);
@@ -81,171 +93,286 @@ function Header({ currentLanguage, setCurrentLanguage, translations }) {
 
   return (
     <header 
-      className={`w-full bg-gradient-to-b from-[#0071BC] to-[#00D2FF] flex items-center h-16 fixed top-0 z-50 transition-transform duration-300 ${
+      className={`w-full bg-gradient-to-b from-[#0071BC] to-[#00D2FF] h-16 fixed top-0 z-50 transition-transform duration-300 ${
         isScrolled ? 'shadow-lg backdrop-blur-sm' : ''
       }`} 
       style={{ 
-        height: 64,
         transform: isHeaderVisible ? 'translateY(0)' : 'translateY(-100%)'
       }}
+      role="banner"
     >
-      <div className="w-full max-w-[1440px] mx-auto flex items-center justify-between px-4 lg:px-[144px]">
+      <nav className="w-full max-w-[1440px] mx-auto flex items-center justify-between h-full px-4 lg:px-8" role="navigation" aria-label="Main navigation">
         <div className="flex items-center gap-6">
           <LegalCityLogo />
-          <button 
-            onClick={() => navigate('/')}
-            className={`hidden md:flex items-center text-sm gap-2 transition-all duration-200 px-3 py-2 relative ${
-              isActive('/') 
-                ? 'text-white' 
-                : 'text-white/90 hover:text-white'
-            }`}
-          >
-            <span>Home</span>
-            {isActive('/') && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"></div>
-            )}
-          </button>
-          <div 
-            className="relative"
-            onMouseEnter={() => setShowDirectoryMenu(true)}
-            onMouseLeave={() => setShowDirectoryMenu(false)}
-          >
-            <button 
-              className={`hidden md:flex items-center text-sm gap-2 transition-all duration-200 px-3 py-2 relative ${
-                isDirectoryActive() 
+          
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex items-center gap-1">
+            <a 
+              href="/"
+              onClick={(e) => { e.preventDefault(); navigate('/'); }}
+              className={`flex items-center text-sm gap-2 transition-all duration-200 px-3 py-2 relative font-medium ${
+                isActive('/') 
                   ? 'text-white' 
                   : 'text-white/90 hover:text-white'
               }`}
+              aria-current={isActive('/') ? 'page' : undefined}
             >
-              <span>{translations[currentLanguage].lawyerDirectory}</span>
-              <svg 
-                width="8" 
-                height="7" 
-                viewBox="0 0 8 7" 
-                fill="none" 
-                xmlns="http://www.w3.org/2000/svg"
-                className={`transition-transform duration-200 ${showDirectoryMenu ? 'rotate-180' : ''}`}
-              >
-                <path d="M0.491211 0.34375L3.99121 5.34375L7.49121 0.34375" stroke="white" strokeWidth="1.2"/>
-              </svg>
-              {isDirectoryActive() && (
+              <span>Home</span>
+              {isActive('/') && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"></div>
               )}
+            </a>
+            
+            <div 
+              className="relative"
+              onMouseEnter={() => setShowDirectoryMenu(true)}
+              onMouseLeave={() => setShowDirectoryMenu(false)}
+            >
+              <button 
+                className={`flex items-center text-sm gap-2 transition-all duration-200 px-3 py-2 relative font-medium ${
+                  isDirectoryActive() 
+                    ? 'text-white' 
+                    : 'text-white/90 hover:text-white'
+                }`}
+                aria-expanded={showDirectoryMenu}
+                aria-haspopup="true"
+              >
+                <span>Lawyers</span>
+                <svg 
+                  width="8" 
+                  height="7" 
+                  viewBox="0 0 8 7" 
+                  fill="none" 
+                  xmlns="http://www.w3.org/2000/svg"
+                  className={`transition-transform duration-200 ${showDirectoryMenu ? 'rotate-180' : ''}`}
+                  aria-hidden="true"
+                >
+                  <path d="M0.491211 0.34375L3.99121 5.34375L7.49121 0.34375" stroke="white" strokeWidth="1.2"/>
+                </svg>
+                {isDirectoryActive() && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"></div>
+                )}
+              </button>
+              
+              <div className={`absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-lg z-10 min-w-[160px] transition-all duration-200 ${
+                showDirectoryMenu 
+                  ? 'opacity-100 visible transform translate-y-0' 
+                  : 'opacity-0 invisible transform -translate-y-2'
+              }`} role="menu">
+                <a
+                  href="/lawyers"
+                  onClick={(e) => { e.preventDefault(); navigate('/lawyers'); setShowDirectoryMenu(false); }}
+                  className={`block w-full px-4 py-2 text-left text-sm transition-colors rounded-t-lg ${
+                    isActive('/lawyers') 
+                      ? 'bg-blue-50 text-blue-600' 
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600'
+                  }`}
+                  role="menuitem"
+                >
+                  Directory
+                </a>
+                <a
+                  href="/find-lawyer"
+                  onClick={(e) => { e.preventDefault(); navigate('/find-lawyer'); setShowDirectoryMenu(false); }}
+                  className={`block w-full px-4 py-2 text-left text-sm transition-colors rounded-b-lg ${
+                    isActive('/find-lawyer') 
+                      ? 'bg-blue-50 text-blue-600' 
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600'
+                  }`}
+                  role="menuitem"
+                >
+                  Find Lawyer
+                </a>
+              </div>
+            </div>
+            
+            <a 
+              href="/blogs"
+              onClick={(e) => { e.preventDefault(); navigate('/blogs'); }}
+              className={`flex items-center text-sm gap-2 transition-all duration-200 px-3 py-2 relative font-medium ${
+                isActive('/blogs') 
+                  ? 'text-white' 
+                  : 'text-white/90 hover:text-white'
+              }`}
+              aria-current={isActive('/blogs') ? 'page' : undefined}
+            >
+              <span>Legal Blog</span>
+              {isActive('/blogs') && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"></div>
+              )}
+            </a>
+            
+            <a 
+              href="/qa"
+              onClick={(e) => { e.preventDefault(); navigate('/qa'); }}
+              className={`flex items-center text-sm gap-2 transition-all duration-200 px-3 py-2 relative font-medium ${
+                isActive('/qa') 
+                  ? 'text-white' 
+                  : 'text-white/90 hover:text-white'
+              }`}
+              aria-current={isActive('/qa') ? 'page' : undefined}
+            >
+              <span>Free Q&A</span>
+              {isActive('/qa') && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"></div>
+              )}
+            </a>
+          </div>
+        </div>
+
+        {/* Desktop Actions */}
+        <div className="hidden md:flex items-center gap-4">
+          <div 
+            className="relative"
+            onMouseEnter={() => setShowLanguageMenu(true)}
+            onMouseLeave={() => setShowLanguageMenu(false)}
+          >
+            <button 
+              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center text-xs font-medium text-white"
+              aria-expanded={showLanguageMenu}
+              aria-haspopup="true"
+              aria-label={`Current language: ${currentLanguage}`}
+            >
+              {currentLanguage}
             </button>
             
-            <div className={`absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-lg z-10 min-w-[160px] transition-all duration-200 ${
-              showDirectoryMenu 
+            <div className={`absolute top-full right-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-lg z-10 min-w-[80px] transition-all duration-200 ${
+              showLanguageMenu 
                 ? 'opacity-100 visible transform translate-y-0' 
                 : 'opacity-0 invisible transform -translate-y-2'
-            }`}>
+            }`} role="menu">
+              {languages.map((language, index) => (
+                <button
+                  key={language.code}
+                  onClick={() => handleLanguageSelect(language)}
+                  className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-50 transition-colors ${
+                    index === 0 ? 'rounded-t-lg' : ''
+                  } ${
+                    index === languages.length - 1 ? 'rounded-b-lg' : ''
+                  } ${
+                    currentLanguage === language.code ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                  }`}
+                  role="menuitem"
+                >
+                  {language.code}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={handleLoginClick}
+              className="flex items-center gap-2 h-[38px] px-4 rounded-[20px] bg-transparent border border-white/30 hover:bg-white/10 transition-colors font-medium"
+              aria-label="Login to your account"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle cx="7" cy="4" r="3" stroke="white" strokeWidth="1.5"/>
+                <path d="M2 12c0-2.5 2.5-4 5-4s5 1.5 5 4" stroke="white" strokeWidth="1.5"/>
+              </svg>
+              <span className="text-white text-sm">Login</span>
+            </button>
+
+            <button 
+              onClick={handleSignupClick}
+              className="h-[38px] px-6 rounded-[20px] bg-white text-black text-sm font-medium hover:bg-gray-100 transition-colors"
+              aria-label="Create new account"
+            >
+              Sign Up
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu Button */}
+        <button 
+          className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+          onClick={() => setShowMobileMenu(!showMobileMenu)}
+          aria-expanded={showMobileMenu}
+          aria-label="Toggle mobile menu"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            {showMobileMenu ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
+        </button>
+      </nav>
+
+      {/* Mobile Menu */}
+      {showMobileMenu && (
+        <div className="md:hidden bg-white border-t border-gray-200 shadow-lg" role="menu">
+          <div className="px-4 py-2 space-y-1">
+            <a
+              href="/"
+              onClick={(e) => { e.preventDefault(); navigate('/'); setShowMobileMenu(false); }}
+              className={`block px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                isActive('/') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'
+              }`}
+              role="menuitem"
+            >
+              Home
+            </a>
+            <a
+              href="/lawyers"
+              onClick={(e) => { e.preventDefault(); navigate('/lawyers'); setShowMobileMenu(false); }}
+              className={`block px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                isActive('/lawyers') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'
+              }`}
+              role="menuitem"
+            >
+              Lawyer Directory
+            </a>
+            <a
+              href="/find-lawyer"
+              onClick={(e) => { e.preventDefault(); navigate('/find-lawyer'); setShowMobileMenu(false); }}
+              className={`block px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                isActive('/find-lawyer') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'
+              }`}
+              role="menuitem"
+            >
+              Find Lawyer
+            </a>
+            <a
+              href="/blogs"
+              onClick={(e) => { e.preventDefault(); navigate('/blogs'); setShowMobileMenu(false); }}
+              className={`block px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                isActive('/blogs') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'
+              }`}
+              role="menuitem"
+            >
+              Legal Blog
+            </a>
+            <a
+              href="/qa"
+              onClick={(e) => { e.preventDefault(); navigate('/qa'); setShowMobileMenu(false); }}
+              className={`block px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                isActive('/qa') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'
+              }`}
+              role="menuitem"
+            >
+              Free Q&A
+            </a>
+            <div className="border-t border-gray-200 pt-2 mt-2">
               <button
-                onClick={() => {
-                  navigate('/lawyers');
-                  setShowDirectoryMenu(false);
-                }}
-                className={`w-full px-4 py-2 text-left text-sm transition-colors rounded-t-lg ${
-                  isActive('/lawyers') 
-                    ? 'bg-blue-50 text-blue-600' 
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600'
-                }`}
+                onClick={() => { handleLoginClick(); setShowMobileMenu(false); }}
+                className="block w-full text-left px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                role="menuitem"
               >
-                Directory
+                Login
               </button>
               <button
-                onClick={() => {
-                  navigate('/find-lawyer');
-                  setShowDirectoryMenu(false);
-                }}
-                className={`w-full px-4 py-2 text-left text-sm transition-colors rounded-b-lg ${
-                  isActive('/find-lawyer') 
-                    ? 'bg-blue-50 text-blue-600' 
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600'
-                }`}
+                onClick={() => { handleSignupClick(); setShowMobileMenu(false); }}
+                className="block w-full text-left px-3 py-2 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors mt-1"
+                role="menuitem"
               >
-                Find Lawyer
+                Sign Up
               </button>
             </div>
           </div>
-          <button 
-            onClick={() => navigate('/blogs')}
-            className={`hidden md:flex items-center text-sm gap-2 transition-all duration-200 px-3 py-2 relative ${
-              isActive('/blogs') 
-                ? 'text-white' 
-                : 'text-white/90 hover:text-white'
-            }`}
-          >
-            <span>Blogs</span>
-            {isActive('/blogs') && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"></div>
-            )}
-          </button>
-          <button 
-            onClick={() => navigate('/qa')}
-            className={`hidden md:flex items-center text-sm gap-2 transition-all duration-200 px-3 py-2 relative ${
-              isActive('/qa') 
-                ? 'text-white' 
-                : 'text-white/90 hover:text-white'
-            }`}
-          >
-            <span>Q&A</span>
-            {isActive('/qa') && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"></div>
-            )}
-          </button>
         </div>
-
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={handleLoginClick}
-            className="flex items-center gap-2 h-[38px] px-4 rounded-[20px] bg-transparent border border-white/30 hover:bg-white/10 transition-colors"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="7" cy="4" r="3" stroke="white" strokeWidth="1.5"/>
-              <path d="M2 12c0-2.5 2.5-4 5-4s5 1.5 5 4" stroke="white" strokeWidth="1.5"/>
-            </svg>
-            <span className="text-white text-sm">{translations[currentLanguage].login}</span>
-          </button>
-
-          <div className="relative">
-            <button 
-              onClick={() => setShowLanguageMenu(!showLanguageMenu)}
-              className="flex items-center gap-2 h-[38px] px-3 rounded-[20px] bg-transparent border border-white/30 hover:bg-white/10 transition-colors"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="8" cy="8" r="6" stroke="white" strokeWidth="1.5"/>
-                <path d="M2 8h12M8 2c1.5 0 3 2.5 3 6s-1.5 6-3 6-3-2.5-3-6 1.5-6 3-6z" stroke="white" strokeWidth="1.5"/>
-              </svg>
-              <span className="text-white text-sm">{currentLanguage}</span>
-              <svg className={`w-3 h-3 text-white transition-transform ${showLanguageMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            
-            {showLanguageMenu && (
-              <div className="absolute top-full right-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-lg z-10 min-w-[120px]">
-                {languages.map((language) => (
-                  <button
-                    key={language.code}
-                    onClick={() => handleLanguageSelect(language)}
-                    className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
-                      currentLanguage === language.code ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-                    }`}
-                  >
-                    {language.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <button 
-            onClick={handleSignupClick}
-            className="h-[38px] px-6 rounded-[20px] bg-white text-black text-sm font-medium hover:bg-gray-100 transition-colors"
-          >
-            {translations[currentLanguage].signup}
-          </button>
-        </div>
-      </div>
+      )}
     </header>
   );
 }
@@ -256,8 +383,8 @@ function Footer({ currentLanguage, translations }) {
   return (
     <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="col-span-1 md:col-span-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
+          <div className="col-span-1 md:col-span-2 lg:col-span-2">
             <div className="flex items-center gap-2 mb-4">
               <div className="bg-white rounded-lg px-3 py-1.5 shadow-sm">
                 <span className="text-[#0284C7] font-bold text-lg tracking-tight">Legal</span>
@@ -287,33 +414,68 @@ function Footer({ currentLanguage, translations }) {
           </div>
 
           <div>
-            <h3 className="font-semibold mb-4">Quick Links</h3>
+            <h3 className="font-semibold mb-4">Browse Our Site</h3>
             <ul className="space-y-2">
-              <li><button onClick={() => navigate('/lawyers')} className="text-gray-300 hover:text-white transition-colors">Find Lawyers</button></li>
-              <li><button onClick={() => navigate('/login')} className="text-gray-300 hover:text-white transition-colors">Login</button></li>
-              <li><button onClick={() => navigate('/register')} className="text-gray-300 hover:text-white transition-colors">Sign Up</button></li>
-              <li><a href="#" className="text-gray-300 hover:text-white transition-colors">About Us</a></li>
+              <li><button onClick={() => navigate('/lawyers')} className="text-gray-300 hover:text-white transition-colors text-sm">Find a Lawyer</button></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Review Your Lawyer</a></li>
+              <li><button onClick={() => navigate('/qa')} className="text-gray-300 hover:text-white transition-colors text-sm">Legal Advice</button></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Recently Answered Questions</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Browse Practice Areas</a></li>
+              <li><button onClick={() => navigate('/blogs')} className="text-gray-300 hover:text-white transition-colors text-sm">Legal Stories Blog</button></li>
             </ul>
           </div>
 
           <div>
-            <h3 className="font-semibold mb-4">Legal Areas</h3>
+            <h3 className="font-semibold mb-4">Popular Locations</h3>
             <ul className="space-y-2">
-              <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Corporate Law</a></li>
-              <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Family Law</a></li>
-              <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Criminal Defense</a></li>
-              <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Personal Injury</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">New York City Lawyers</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Los Angeles Lawyers</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Chicago Lawyers</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Houston Lawyers</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Washington, DC Lawyers</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Philadelphia Lawyers</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Phoenix Lawyers</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">San Antonio Lawyers</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">San Diego Lawyers</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-4">Popular Practice Areas</h3>
+            <ul className="space-y-2">
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Bankruptcy & Debt Lawyers</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Business Lawyers</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Criminal Defense Lawyers</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">DUI & DWI Lawyers</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Estate Planning Lawyers</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Car Accident Lawyers</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Divorce & Separation Lawyers</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Intellectual Property Lawyers</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Speeding & Traffic Lawyers</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-4">About</h3>
+            <ul className="space-y-2">
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">About Legal City</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Careers</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Support</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Rating Explained</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Community Guidelines</a></li>
+              <li><a href="#" className="text-gray-300 hover:text-white transition-colors text-sm">Sitemap</a></li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-gray-400 text-sm">
-            © 2024 LegalCity. All rights reserved.
+            © 2024 Legal City Inc. All Rights Reserved.
           </p>
-          <div className="flex gap-6 mt-4 md:mt-0">
+          <div className="flex flex-wrap gap-6 mt-4 md:mt-0">
+            <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Terms of Use</a>
             <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Privacy Policy</a>
-            <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Terms of Service</a>
+            <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Do Not Sell or Share My Personal Information</a>
             <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Contact</a>
           </div>
         </div>

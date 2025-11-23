@@ -94,11 +94,11 @@ const ChatPage = () => {
     if (!selectedConversation) return;
     
     try {
-      const messages = await chatService.getMessages(
+      const messagesData = await chatService.getMessages(
         selectedConversation.partner_id,
         selectedConversation.partner_type
       );
-      setMessages(messages || []);
+      setMessages(Array.isArray(messagesData) ? messagesData : []);
       
       // Mark as read
       await chatService.markAsRead(
@@ -108,6 +108,7 @@ const ChatPage = () => {
       loadConversations();
     } catch (error) {
       console.error('Error loading messages:', error);
+      setMessages([]);
     }
   };
 
@@ -494,7 +495,7 @@ const ChatPage = () => {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-6 bg-gray-50 custom-scrollbar">
-              {messages.map((message, index) => {
+              {Array.isArray(messages) && messages.map((message, index) => {
                 const isMine = message.sender_id === user.id && message.sender_type === userType;
                 const showAvatar = index === 0 || messages[index - 1]?.sender_id !== message.sender_id;
                 

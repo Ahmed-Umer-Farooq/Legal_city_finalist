@@ -97,7 +97,7 @@ const QAPage = () => {
 
   if (showPreview) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12">
+      <div className="min-h-screen bg-white py-12">
         <div className="max-w-4xl mx-auto px-4">
           <div className="bg-white rounded-2xl shadow-xl p-8">
             <div className="flex items-center justify-between mb-8">
@@ -155,28 +155,28 @@ const QAPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-blue-600 to-purple-700 text-white py-16">
+      <div className="bg-white py-16">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <div className="flex justify-center mb-6">
-            <div className="bg-white/20 p-4 rounded-2xl">
-              <MessageCircle className="w-12 h-12" />
+            <div className="bg-blue-50 p-4 rounded-2xl">
+              <MessageCircle className="w-12 h-12 text-blue-600" />
             </div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Free Q&A with Attorneys</h1>
-          <p className="text-xl text-blue-100 mb-8">Submit your legal question to get attorney insights.</p>
-          <div className="flex justify-center gap-8 text-sm">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">Free Q&A with Attorneys</h1>
+          <p className="text-xl text-gray-600 mb-8">Submit your legal question to get attorney insights.</p>
+          <div className="flex justify-center gap-8 text-sm text-gray-700">
             <div className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
+              <Users className="w-5 h-5 text-blue-600" />
               <span>Expert Attorneys</span>
             </div>
             <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5" />
+              <Shield className="w-5 h-5 text-green-600" />
               <span>Confidential</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5" />
+              <CheckCircle className="w-5 h-5 text-purple-600" />
               <span>Free Service</span>
             </div>
           </div>

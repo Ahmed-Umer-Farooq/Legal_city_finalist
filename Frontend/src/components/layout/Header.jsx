@@ -72,8 +72,30 @@ const Header = () => {
                 </Link>
               </div>
             </div>
-            <button className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">Services</button>
-            <button className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">Contact</button>
+            <Link 
+              to="/legal-forms" 
+              className={`px-3 py-2 text-sm font-medium transition-colors ${
+                isActive('/legal-forms') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-700 hover:text-blue-600'
+              }`}
+            >
+              Legal Forms
+            </Link>
+            <Link 
+              to="/qa" 
+              className={`px-3 py-2 text-sm font-medium transition-colors ${
+                isActive('/qa') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-700 hover:text-blue-600'
+              }`}
+            >
+              Q&A
+            </Link>
+            <Link 
+              to="/contact-us" 
+              className={`px-3 py-2 text-sm font-medium transition-colors ${
+                isActive('/contact-us') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-700 hover:text-blue-600'
+              }`}
+            >
+              Contact
+            </Link>
           </nav>
         </div>
       </div>

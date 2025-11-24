@@ -18,6 +18,7 @@ const LawyerProfile = lazy(() => import('./pages/LawyerProfile'));
 const LawyerDashboard = lazy(() => import('./pages/lawyer/LawyerDashboard'));
 const FindLawyer = lazy(() => import('./pages/FindLawyer'));
 const SearchResults = lazy(() => import('./pages/SearchResults'));
+const LegalForms = lazy(() => import('./pages/LegalForms'));
 const UserDashboard = lazy(() => import('./pages/userdashboard/UserDashboard'));
 const Blog = lazy(() => import('./pages/userdashboard/Blog'));
 const BlogPage = lazy(() => import('./pages/Blogs/blogs'));
@@ -129,6 +130,7 @@ function App() {
           <Route path="/blog/:id" element={<BlogDetail />} />
           <Route path="/qa" element={<QAPage />} />
           <Route path="/contact-us" element={<ContactUs />} />
+          <Route path="/legal-forms" element={<LegalForms />} />
         </Route>
         
         {/* Catch all - redirect to home */}

@@ -203,6 +203,22 @@ function Header({ currentLanguage, setCurrentLanguage, translations }) {
             </a>
             
             <a 
+              href="/legal-forms"
+              onClick={(e) => { e.preventDefault(); navigate('/legal-forms'); }}
+              className={`flex items-center text-sm gap-2 transition-all duration-200 px-3 py-2 relative font-medium ${
+                isActive('/legal-forms') 
+                  ? 'text-white' 
+                  : 'text-white/90 hover:text-white'
+              }`}
+              aria-current={isActive('/legal-forms') ? 'page' : undefined}
+            >
+              <span>Legal Forms</span>
+              {isActive('/legal-forms') && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"></div>
+              )}
+            </a>
+            
+            <a 
               href="/qa"
               onClick={(e) => { e.preventDefault(); navigate('/qa'); }}
               className={`flex items-center text-sm gap-2 transition-all duration-200 px-3 py-2 relative font-medium ${
@@ -359,6 +375,16 @@ function Header({ currentLanguage, setCurrentLanguage, translations }) {
               role="menuitem"
             >
               Legal Blog
+            </a>
+            <a
+              href="/legal-forms"
+              onClick={(e) => { e.preventDefault(); navigate('/legal-forms'); setShowMobileMenu(false); }}
+              className={`block px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                isActive('/legal-forms') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'
+              }`}
+              role="menuitem"
+            >
+              Legal Forms
             </a>
             <a
               href="/qa"

@@ -151,9 +151,9 @@ app.use('/api/blogs', blogsRoutes);
 const uploadRoutes = require('./routes/upload');
 app.use('/api/upload', uploadRoutes);
 
-// Chat routes
-const chatRoutes = require('./routes/chatRoutes');
-app.use('/api/chat', chatRoutes);
+// Secure Chat routes
+const secureChatRoutes = require('./routes/secureChatRoutes');
+app.use('/api/chat', secureChatRoutes);
 
 // Store active users
 const activeUsers = new Map();

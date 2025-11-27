@@ -63,7 +63,7 @@ export default function LawyerProfile() {
     
     // Navigate to correct chat route
     if (user.role === 'lawyer' || user.registration_id) {
-      navigate('/lawyer-dashboard/chatapp');
+      navigate('/lawyer/dashboard/chatapp');
     } else {
       navigate('/user/messages');
     }

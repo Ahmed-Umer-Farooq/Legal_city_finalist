@@ -7,8 +7,9 @@ const { authenticateToken } = require('../utils/middleware');
 router.get('/conversations', authenticateToken, async (req, res) => {
   try {
     const { id: userId, role } = req.user;
-    // Check if user is a lawyer by role or registration_id
-    const userType = (role === 'lawyer' || req.user.registration_id) ? 'lawyer' : 'user';
+    // Determine user type based on which table the user exists in
+    const isLawyer = await db('lawyers').where('id', userId).first();
+    const userType = isLawyer ? 'lawyer' : 'user';
     
     console.log(`Fetching conversations for user ${userId} (${userType}) - role: ${role}, reg_id: ${req.user.registration_id}`);
     
@@ -126,7 +127,8 @@ router.get('/conversations', authenticateToken, async (req, res) => {
 router.get('/messages/:partnerId/:partnerType', authenticateToken, async (req, res) => {
   try {
     const { id: userId } = req.user;
-    const userType = (req.user.role === 'lawyer' || req.user.registration_id) ? 'lawyer' : 'user';
+    const isLawyer = await db('lawyers').where('id', userId).first();
+    const userType = isLawyer ? 'lawyer' : 'user';
     const { partnerId, partnerType } = req.params;
     const { limit = 50, offset = 0 } = req.query;
 
@@ -162,7 +164,8 @@ router.get('/messages/:partnerId/:partnerType', authenticateToken, async (req, r
 router.put('/messages/read/:partnerId/:partnerType', authenticateToken, async (req, res) => {
   try {
     const { id: userId } = req.user;
-    const userType = (req.user.role === 'lawyer' || req.user.registration_id) ? 'lawyer' : 'user';
+    const isLawyer = await db('lawyers').where('id', userId).first();
+    const userType = isLawyer ? 'lawyer' : 'user';
     const { partnerId, partnerType } = req.params;
 
     console.log(`Marking messages as read for user ${userId} (${userType}) from partner ${partnerId} (${partnerType})`);
@@ -185,11 +188,26 @@ router.put('/messages/read/:partnerId/:partnerType', authenticateToken, async (r
   }
 });
 
+// Get user type based on token
+router.get('/user-type', authenticateToken, async (req, res) => {
+  try {
+    const { id: userId } = req.user;
+    const isLawyer = await db('lawyers').where('id', userId).first();
+    const userType = isLawyer ? 'lawyer' : 'user';
+    
+    res.json({ userType, userId });
+  } catch (error) {
+    console.error('Error determining user type:', error);
+    res.status(500).json({ error: 'Failed to determine user type' });
+  }
+});
+
 // Get unread message count
 router.get('/unread-count', authenticateToken, async (req, res) => {
   try {
-    const { id: userId, role } = req.user;
-    const userType = role === 'lawyer' ? 'lawyer' : 'user';
+    const { id: userId } = req.user;
+    const isLawyer = await db('lawyers').where('id', userId).first();
+    const userType = isLawyer ? 'lawyer' : 'user';
     
     const unreadCount = await db('chat_messages')
       .where({
@@ -299,8 +317,9 @@ router.post('/send', authenticateToken, async (req, res) => {
 // Delete conversation
 router.delete('/conversation/:partnerId/:partnerType', authenticateToken, async (req, res) => {
   try {
-    const { id: userId, role } = req.user;
-    const userType = role === 'lawyer' ? 'lawyer' : 'user';
+    const { id: userId } = req.user;
+    const isLawyer = await db('lawyers').where('id', userId).first();
+    const userType = isLawyer ? 'lawyer' : 'user';
     const { partnerId, partnerType } = req.params;
 
     await db('chat_messages')

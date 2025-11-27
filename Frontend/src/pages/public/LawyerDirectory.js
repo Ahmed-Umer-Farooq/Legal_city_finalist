@@ -113,19 +113,13 @@ function LawyerCard({
 
   const handleChatWithLawyer = () => {
     if (!user) {
-      // Only allow chat from dashboard context
-      if (fromDashboard) {
-        localStorage.setItem('pendingChat', JSON.stringify({
-          partner_id: id,
-          partner_type: 'lawyer',
-          partner_name: name
-        }));
-        toast.error('Please login to chat with lawyers');
-        navigate('/login');
-      } else {
-        toast.error('Please login to access chat features');
-        navigate('/login');
-      }
+      localStorage.setItem('pendingChat', JSON.stringify({
+        partner_id: id,
+        partner_type: 'lawyer',
+        partner_name: name
+      }));
+      toast.error('Please login to chat with lawyers');
+      navigate('/login');
     } else {
       // User is logged in, start chat
       localStorage.setItem('chatPartner', JSON.stringify({
@@ -135,7 +129,7 @@ function LawyerCard({
       }));
       // Navigate to chat page based on user type
       if (user.role === 'lawyer' || user.registration_id) {
-        navigate('/lawyer-dashboard/chatapp');
+        navigate('/lawyer/dashboard/chatapp');
       } else {
         navigate('/user/messages');
       }
@@ -228,7 +222,15 @@ function LawyerCard({
             >
               View Profile
             </button>
-
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                handleChatWithLawyer();
+              }}
+              className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Chat
+            </button>
           </div>
         </div>
       </div>

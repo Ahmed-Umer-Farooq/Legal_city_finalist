@@ -3,8 +3,13 @@ import { useAuth } from '../../context/AuthContext';
 import chatService from '../../utils/chatService';
 import { Send, Search, MoreVertical, Phone, Video, Paperclip, Smile, CheckCheck, MessageCircle, Settings, Bell, Users, Archive, Star, Shield, Zap, Crown } from 'lucide-react';
 
-const ChatPage = () => {
+const ChatPage = ({ key }) => {
   const { user } = useAuth();
+  
+  const userType = window.location.pathname.includes('/lawyer/dashboard') ? 'lawyer' : 'user';
+  
+  // Force component remount when user changes - unique key per person
+  const componentKey = `${user?.id}-${userType}` || 'no-user';
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState(new Set());
@@ -20,19 +25,50 @@ const ChatPage = () => {
   const typingTimeoutRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  const userType = (user?.role === 'lawyer' || user?.registration_id || window.location.pathname.includes('lawyer')) ? 'lawyer' : 'user';
-
   useEffect(() => {
     if (!user) return;
 
+    // Force complete state reset for new user
+    setSocket(null);
+    setIsConnected(false);
+    setOnlineUsers(new Set());
+    setConversations([]);
+    setSelectedConversation(null);
+    setMessages([]);
+    setNewMessage('');
+    setSearchQuery('');
+    setIsTyping(false);
+    setSelectedFile(null);
+    setUploading(false);
+    
     console.log('🚀 Chat initialized for user:', user.id, 'as type:', userType);
     
+    // Clear all session storage and localStorage for chat to ensure complete isolation
+    Object.keys(sessionStorage).forEach(key => {
+      if (key.startsWith('chat_')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('chat_') || key === 'chatPartner' || key === 'pendingChat') {
+        localStorage.removeItem(key);
+      }
+    });
+    
     chatService.disconnect();
+    
+    // Force disconnect any existing connections
+    if (window.chatSocket) {
+      window.chatSocket.disconnect();
+    }
     
     const socketInstance = chatService.connect({ 
       userId: user.id, 
       userType: userType 
     });
+    
+    // Store socket reference globally to ensure cleanup
+    window.chatSocket = socketInstance;
     setSocket(socketInstance);
 
     socketInstance.on('connect', () => {
@@ -75,18 +111,48 @@ const ChatPage = () => {
     }
 
     return () => {
+      // Clean up with user-specific cleanup
       chatService.removeAllListeners();
       chatService.disconnect();
+      if (window.chatSocket) {
+        window.chatSocket.disconnect();
+        window.chatSocket = null;
+      }
+      // Clear state
+      setConversations([]);
+      setSelectedConversation(null);
+      setMessages([]);
     };
   }, [user?.id, userType]);
 
   const loadConversations = async () => {
     try {
+      // Use user-specific caching key
+      const cacheKey = `chat_conversations_${user.id}_${userType}`;
+      
       const conversations = await chatService.getConversations();
-      setConversations(Array.isArray(conversations) ? conversations : []);
+      const conversationData = Array.isArray(conversations) ? conversations : [];
+      
+      // Cache conversations with person-specific key (includes user ID + type)
+      sessionStorage.setItem(cacheKey, JSON.stringify(conversationData));
+      
+      // Clear other users' cached data to prevent leakage
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.startsWith('chat_conversations_') && key !== cacheKey) {
+          sessionStorage.removeItem(key);
+        }
+      });
+      setConversations(conversationData);
     } catch (error) {
       console.error('Error loading conversations:', error);
-      setConversations([]);
+      // Try to load from user-specific cache
+      const cacheKey = `chat_conversations_${user.id}_${userType}`;
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        setConversations(JSON.parse(cached));
+      } else {
+        setConversations([]);
+      }
     }
   };
 
@@ -98,7 +164,13 @@ const ChatPage = () => {
         selectedConversation.partner_id,
         selectedConversation.partner_type
       );
-      setMessages(Array.isArray(messagesData) ? messagesData : []);
+      const messageArray = Array.isArray(messagesData) ? messagesData : [];
+      
+      // Cache messages with user-specific key
+      const cacheKey = `chat_messages_${user.id}_${selectedConversation.partner_id}_${selectedConversation.partner_type}`;
+      sessionStorage.setItem(cacheKey, JSON.stringify(messageArray));
+      
+      setMessages(messageArray);
       
       // Mark as read
       await chatService.markAsRead(
@@ -288,8 +360,13 @@ const ChatPage = () => {
     conv.partner_name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Don't render if no user
+  if (!user) {
+    return <div className="flex items-center justify-center h-screen">Please log in to access chat</div>;
+  }
+
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div key={componentKey} className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Conversations Sidebar */}
       <div className="w-1/3 bg-white border-r border-gray-200 shadow-lg flex flex-col">
 

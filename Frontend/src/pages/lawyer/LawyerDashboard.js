@@ -455,7 +455,7 @@ export default function LawyerDashboard() {
         
         {activeNavItem === 'messages' && (
           <React.Suspense fallback={<div className="text-center py-8">Loading Messages...</div>}>
-            <ChatPage key="lawyer-chat" />
+            <ChatPage key={`lawyer-chat-${currentUser?.id || 'no-user'}`} />
           </React.Suspense>
         )}
         

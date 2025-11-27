@@ -397,8 +397,8 @@ const AuthForm = ({ onSwitchToLogin, onRegisterSuccess }) => {
         <button
           type="button"
           onClick={() => {
-            const userTypeParam = userType === 'lawyer' ? '?type=lawyer' : '?type=user';
-            window.location.href = `http://localhost:5001/auth/google${userTypeParam}`;
+            const baseUrl = process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.replace('/api', '') : 'http://localhost:5001';
+            window.location.href = `${baseUrl}/api/auth/google?role=${userType}`;
           }}
           className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors font-medium"
         >

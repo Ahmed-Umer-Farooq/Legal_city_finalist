@@ -103,10 +103,11 @@ export default function LawyerDashboard() {
       };
       metaDescription.setAttribute('content', descriptions[activeNavItem] || descriptions['home']);
     }
-  }, [location.pathname, activeNavItem]);
+  }, [location.pathname]);
 
   useEffect(() => {
     fetchDashboardData();
+    fetchLawyerProfile();
     // Get current user from localStorage
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     setCurrentUser(user);
@@ -155,43 +156,36 @@ export default function LawyerDashboard() {
     }
   }, []);
 
+  const fetchLawyerProfile = async () => {
+    try {
+      const response = await api.get('/lawyer/profile');
+      if (response.data?.success && response.data?.data) {
+        setCurrentUser(response.data.data);
+        // Update localStorage with fresh data
+        localStorage.setItem('user', JSON.stringify(response.data.data));
+      }
+    } catch (error) {
+      console.error('Error fetching lawyer profile:', error);
+    }
+  };
+
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      console.log('Fetching dashboard data...');
       
       const [statsRes, casesRes, clientsRes, invoicesRes] = await Promise.all([
-        api.get('/lawyer/dashboard/overview').catch(e => {
-          console.error('Stats API error:', e.response?.data || e.message);
-          return { data: { data: { activeCases: 0, totalClients: 0, monthlyRevenue: 0, upcomingHearings: 0 } } };
-        }),
-        api.get('/lawyer/cases?page=1&limit=10').catch(e => {
-          console.error('Cases API error:', e.response?.data || e.message);
-          return { data: { data: [] } };
-        }),
-        api.get('/lawyer/clients?page=1&limit=3').catch(e => {
-          console.error('Clients API error:', e.response?.data || e.message);
-          return { data: { data: [] } };
-        }),
-        api.get('/lawyer/invoices?page=1&limit=3').catch(e => {
-          console.error('Invoices API error:', e.response?.data || e.message);
-          return { data: { data: [] } };
-        })
+        api.get('/lawyer/dashboard/overview'),
+        api.get('/lawyer/cases?page=1&limit=10'),
+        api.get('/lawyer/clients?page=1&limit=3'),
+        api.get('/lawyer/invoices?page=1&limit=3')
       ]);
-      
-      console.log('API Responses:', { statsRes: statsRes.data, casesRes: casesRes.data, clientsRes: clientsRes.data, invoicesRes: invoicesRes.data });
       
       setStats(statsRes.data?.data || { activeCases: 0, totalClients: 0, monthlyRevenue: 0, upcomingHearings: 0 });
       setCases(Array.isArray(casesRes.data?.data) ? casesRes.data.data : []);
       setClients(Array.isArray(clientsRes.data?.data) ? clientsRes.data.data : []);
       setInvoices(Array.isArray(invoicesRes.data?.data) ? invoicesRes.data.data : []);
-      
-      console.log('Dashboard data loaded successfully');
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      console.error('Error details:', error.response?.data || error.message);
-      
-      // Set default data instead of showing error
       setStats({ activeCases: 0, totalClients: 0, monthlyRevenue: 0, upcomingHearings: 0 });
       setCases([]);
       setClients([]);
@@ -623,7 +617,7 @@ export default function LawyerDashboard() {
                 <FileText className="w-4 h-4 text-white" />
               </div>
               <h3 className="text-[#03498B] text-xl font-semibold mb-2">Active Cases</h3>
-              <p className="text-[#03498B] text-2xl font-bold mb-1">{stats.activeCases || 12}</p>
+              <p className="text-[#03498B] text-2xl font-bold mb-1">{stats.activeCases}</p>
               <div className="flex items-center text-xs">
                 <span className="text-green-600 font-medium">+8%</span>
                 <span className="text-[#737791] ml-1">from last month</span>
@@ -635,7 +629,7 @@ export default function LawyerDashboard() {
                 <Users className="w-4 h-4 text-white" />
               </div>
               <h3 className="text-[#1F5632] text-xl font-semibold mb-2">Total Clients</h3>
-              <p className="text-[#1F5632] text-2xl font-bold mb-1">{stats.totalClients || 45}</p>
+              <p className="text-[#1F5632] text-2xl font-bold mb-1">{stats.totalClients}</p>
               <div className="flex items-center text-xs">
                 <span className="text-green-600 font-medium">+15%</span>
                 <span className="text-[#737791] ml-1">from last month</span>
@@ -647,7 +641,7 @@ export default function LawyerDashboard() {
                 <DollarSign className="w-4 h-4 text-white" />
               </div>
               <h3 className="text-[#931B12] text-xl font-semibold mb-2">Monthly Revenue</h3>
-              <p className="text-[#931B12] text-2xl font-bold mb-1">${(stats.monthlyRevenue || 28500).toLocaleString()}</p>
+              <p className="text-[#931B12] text-2xl font-bold mb-1">${stats.monthlyRevenue.toLocaleString()}</p>
               <div className="flex items-center text-xs">
                 <span className="text-green-600 font-medium">+22%</span>
                 <span className="text-[#737791] ml-1">from last month</span>
@@ -659,7 +653,7 @@ export default function LawyerDashboard() {
                 <Calendar className="w-4 h-4 text-white" />
               </div>
               <h3 className="text-[#654C1F] text-xl font-semibold mb-2">Upcoming Hearings</h3>
-              <p className="text-[#654C1F] text-2xl font-bold mb-1">{stats.upcomingHearings || 7}</p>
+              <p className="text-[#654C1F] text-2xl font-bold mb-1">{stats.upcomingHearings}</p>
               <div className="flex items-center text-xs">
                 <span className="text-orange-600 font-medium">3 this week</span>
               </div>
@@ -705,7 +699,7 @@ export default function LawyerDashboard() {
                 <div className="absolute inset-0 rounded-full" style={{background: `conic-gradient(#007EF4 0deg 108deg, #16D959 108deg 180deg, #E6372B 180deg 252deg, #F5AB23 252deg 324deg, #737791 324deg 360deg)`}}></div>
                 <div className="absolute inset-4 bg-white rounded-full flex items-center justify-center">
                   <div className="text-center">
-                    <div className="text-xl font-bold text-[#181A2A]">{stats.activeCases || 12}</div>
+                    <div className="text-xl font-bold text-[#181A2A]">{stats.activeCases}</div>
                     <div className="text-xs text-[#737791]">Total</div>
                   </div>
                 </div>

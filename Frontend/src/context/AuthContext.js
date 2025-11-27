@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for OAuth token in URL first
+    // Check for OAuth token in URL first (works on any route)
     const urlParams = new URLSearchParams(window.location.search);
     const oauthToken = urlParams.get('token');
     
@@ -24,12 +24,15 @@ export const AuthProvider = ({ children }) => {
       // Decode JWT to get user data
       try {
         const payload = JSON.parse(atob(oauthToken.split('.')[1]));
+        console.log('OAuth token payload:', payload);
         const userData = {
           id: payload.id,
           email: payload.email,
-          role: payload.role
+          role: payload.role || 'user',
+          registration_id: payload.registration_id || null
         };
         
+        console.log('Setting OAuth user data:', userData);
         setToken(oauthToken);
         setUser(userData);
         localStorage.setItem('token', oauthToken);
@@ -50,8 +53,10 @@ export const AuthProvider = ({ children }) => {
     
     if (storedUser && storedToken) {
       try {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
         setToken(storedToken);
+        console.log('Loaded stored user:', parsedUser);
       } catch (error) {
         console.error('Error parsing stored user data:', error);
         localStorage.removeItem('user');

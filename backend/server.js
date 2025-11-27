@@ -104,46 +104,7 @@ console.log('📁 Serving uploads from:', path.join(__dirname, 'uploads'));
 // Routes
 app.use('/api/auth', authRoutes);
 
-// Working admin endpoints
-app.get('/api/admin/stats', async (req, res) => {
-  try {
-    const totalUsers = await db('users').count('id as count').first();
-    const totalLawyers = await db('lawyers').count('id as count').first();
-    const verifiedLawyers = await db('lawyers').where('is_verified', 1).count('id as count').first();
-    const unverifiedLawyers = await db('lawyers').where('is_verified', 0).count('id as count').first();
-    
-    res.json({
-      stats: {
-        totalUsers: totalUsers.count || 0,
-        totalLawyers: totalLawyers.count || 0,
-        verifiedLawyers: verifiedLawyers.count || 0,
-        unverifiedLawyers: unverifiedLawyers.count || 0
-      },
-      recentUsers: [],
-      recentLawyers: []
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
-app.get('/api/admin/users', async (req, res) => {
-  try {
-    const users = await db('users').select('*').limit(10);
-    res.json({ users, pagination: { page: 1, limit: 10, total: users.length, totalPages: 1 } });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get('/api/admin/lawyers', async (req, res) => {
-  try {
-    const lawyers = await db('lawyers').select('*').limit(10);
-    res.json({ lawyers, pagination: { page: 1, limit: 10, total: lawyers.length, totalPages: 1 } });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 const adminRoutes = require('./routes/admin');
 console.log('🔍 Loading admin routes at /api/admin');
@@ -344,16 +305,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// Legacy blog endpoints for compatibility
-const blogController = require('./controllers/blogController');
-const { requireAuth, requireLawyer } = require('./utils/middleware');
-app.get('/api/blog-categories', blogController.getBlogCategories);
-app.get('/api/blog-tags', blogController.getBlogTags);
-app.get('/api/blog-authors', blogController.getTopAuthors);
-app.get('/api/popular-blogs', blogController.getPopularPosts);
 
-// Lawyer blog management route
-app.get('/api/lawyer/blogs', requireAuth, requireLawyer, blogController.getLawyerBlogs);
 
 // Health check
 app.get('/health', (req, res) => {

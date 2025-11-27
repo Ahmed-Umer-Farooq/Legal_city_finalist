@@ -114,7 +114,15 @@ passport.use(
           return done(null, false, { message: 'Failed to create or retrieve user account' });
         }
 
-        const token = generateToken(userRecord);
+        // Ensure userRecord has role for token generation
+        const userWithRole = { 
+          ...userRecord, 
+          role: roleToUse,
+          registration_id: userRecord.registration_id || null
+        };
+        console.log('🔍 Token generation data:', { id: userWithRole.id, email: userWithRole.email, role: userWithRole.role, registration_id: userWithRole.registration_id });
+        const token = generateToken(userWithRole);
+        console.log('🔍 Generated token payload:', JSON.parse(atob(token.split('.')[1])));
         console.log(`✅ Google OAuth success - Role: ${roleToUse}, Email: ${email}, ID: ${userRecord.id}, ProfileCompleted: ${userRecord.profile_completed}`);
         done(null, { user: userRecord, token, role: roleToUse });
       } catch (error) {

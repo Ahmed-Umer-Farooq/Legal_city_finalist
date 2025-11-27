@@ -11,7 +11,7 @@ const getRedirectPath = (userData) => {
 
   // Priority 3: Lawyer check
   if (userData.role === 'lawyer' || userData.registration_id) {
-    return '/lawyer-dashboard';
+    return '/lawyer/dashboard';
   }
 
   // Priority 4: Default user

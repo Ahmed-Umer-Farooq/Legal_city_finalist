@@ -76,10 +76,8 @@ function App() {
         <Route path="/google-lawyer-setup" element={<Suspense fallback={<LoadingSpinner />}><GoogleLawyerSetup /></Suspense>} />
         <Route path="/logout" element={<Suspense fallback={<LoadingSpinner />}><Logout /></Suspense>} />
         
-        {/* SEO-Friendly Lawyer Dashboard Routes */}
-        <Route path="/lawyer-dashboard" element={<Navigate to="/lawyer/dashboard" replace />} />
-        <Route path="/lawyer/dashboard" element={<ProtectedRoute><Suspense fallback={<LoadingSpinner />}><LawyerDashboard /></Suspense></ProtectedRoute>} />
-        <Route path="/lawyer/dashboard/overview" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
+        {/* Lawyer Dashboard Routes */}
+        <Route path="/lawyer/dashboard" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
         <Route path="/lawyer/dashboard/cases" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
         <Route path="/lawyer/dashboard/clients" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
         <Route path="/lawyer/dashboard/contacts" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
@@ -91,7 +89,7 @@ function App() {
         <Route path="/lawyer/dashboard/blogs" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
         <Route path="/lawyer/dashboard/profile" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
         <Route path="/lawyer/dashboard/account" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
-        <Route path="/lawyer-dashboard/chatapp" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+        <Route path="/lawyer/dashboard/chatapp" element={<ProtectedRoute><Suspense fallback={<LoadingSpinner />}><ChatPage /></Suspense></ProtectedRoute>} />
         <Route path="/user-dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
         <Route path="/admin-dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
         

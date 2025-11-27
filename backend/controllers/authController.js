@@ -40,23 +40,21 @@ const login = async (req, res) => {
     let user;
     let role;
 
-    // Check users table first if email provided
-    if (email) {
-      user = await db('users').where({ email }).first();
-      if (user) {
-        role = 'user';
-      }
-    }
-
-    // If not found in users and registration_id provided, check lawyers table
-    if (!user && registration_id) {
+    // Priority 1: If registration_id provided, check lawyers table first
+    if (registration_id) {
       user = await db('lawyers').where({ registration_id }).first();
       if (user) {
         role = 'lawyer';
       }
     }
 
-    // Removed fallback: do not allow lawyer login by email in unified login
+    // Priority 2: If not found in lawyers and email provided, check users table
+    if (!user && email) {
+      user = await db('users').where({ email }).first();
+      if (user) {
+        role = 'user';
+      }
+    }
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -448,6 +446,8 @@ const updateProfile = async (req, res) => {
         zip_code,
         country,
         profile_completed: 1, // Mark profile as completed
+        is_verified: 1, // Mark as verified
+        lawyer_verified: 1, // Mark lawyer as verified
         updated_at: db.fn.now()
       };
 

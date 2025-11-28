@@ -60,6 +60,15 @@ const AuthContent = () => {
     
     login(token, userData);
     
+    // Check for saved redirect URL from blog access
+    const savedRedirect = sessionStorage.getItem('redirectAfterLogin');
+    if (savedRedirect) {
+      sessionStorage.removeItem('redirectAfterLogin');
+      console.log('Redirecting to saved blog URL:', savedRedirect);
+      navigate(savedRedirect);
+      return;
+    }
+    
     const redirectPath = handleAuthRedirect(userData);
     console.log('Navigating to:', redirectPath);
     navigate(redirectPath);

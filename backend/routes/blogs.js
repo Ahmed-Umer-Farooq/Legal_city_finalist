@@ -1,32 +1,38 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
 const router = express.Router();
 const blogController = require('../controllers/blogController');
 const { requireAuth, requireLawyer, checkBlogOwnership } = require('../utils/middleware');
 
-// LAWYER ROUTES (must be before dynamic routes)
-// POST /api/blogs - Create new blog (lawyers only)
-router.post('/', (req, res, next) => {
-  req.user = { id: 1, role: 'lawyer', name: 'Test Lawyer' };
-  next();
-}, blogController.createBlog);
+// Configure multer for image uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
 
-// PUT /api/blogs/:id - Update own blog (author only)
-router.put('/:identifier', requireAuth, requireLawyer, checkBlogOwnership, blogController.updateBlog);
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  }
+});
 
-// DELETE /api/blogs/:id - Delete own blog (author only)
-router.delete('/:identifier', requireAuth, requireLawyer, checkBlogOwnership, blogController.deleteBlog);
-
-// PUBLIC ROUTES (no auth required)
+// PUBLIC ROUTES (no auth required) - must be before dynamic routes
 // GET /api/blogs - Get all published blogs
 router.get('/', blogController.getAllBlogs);
 
-// GET /api/lawyer/blogs - Get lawyer's own blogs
-router.get('/lawyer', (req, res, next) => {
-  req.user = { id: 1, role: 'lawyer', name: 'Test Lawyer' };
-  next();
-}, blogController.getLawyerBlogs);
-
-// GET /api/blog-categories - Get blog categories (legacy endpoint)
+// GET /api/blogs/categories - Get blog categories
 router.get('/categories', blogController.getBlogCategories);
 
 // GET /api/blogs/top-authors - Get top authors
@@ -37,6 +43,44 @@ router.get('/tags', blogController.getBlogTags);
 
 // GET /api/blogs/popular - Get popular posts
 router.get('/popular', blogController.getPopularPosts);
+
+// LAWYER ROUTES (authenticated)
+// GET /api/blogs/lawyer - Get lawyer's own blogs
+router.get('/lawyer', requireAuth, requireLawyer, blogController.getLawyerBlogs);
+
+// GET /api/blogs/engagement-count - Get engagement count for notifications
+router.get('/engagement-count', requireAuth, requireLawyer, blogController.getEngagementCount);
+
+// POST /api/blogs - Create new blog (lawyers only)
+router.post('/', requireAuth, requireLawyer, upload.single('image'), blogController.createBlog);
+
+// GET /api/blogs/:blog_id/analytics - Get detailed analytics for specific blog
+router.get('/:blog_id/analytics', requireAuth, requireLawyer, blogController.getBlogDetailedAnalytics);
+
+// PUT /api/blogs/:id - Update own blog (author only)
+router.put('/:identifier', requireAuth, requireLawyer, checkBlogOwnership, blogController.updateBlog);
+
+// DELETE /api/blogs/:id - Delete own blog (author only)
+router.delete('/:identifier', requireAuth, requireLawyer, checkBlogOwnership, blogController.deleteBlog);
+
+// DELETE /api/blogs/comments/:comment_id/moderate - Delete comment as blog author
+router.delete('/comments/:comment_id/moderate', requireAuth, requireLawyer, blogController.deleteBlogCommentByAuthor);
+
+// COMMENT ROUTES
+// GET /api/blogs/:blog_id/comments - Get comments for a blog (public)
+router.get('/:blog_id/comments', blogController.getBlogComments);
+
+// POST /api/blogs/:blog_id/comments - Create comment (auth required)
+router.post('/:blog_id/comments', requireAuth, blogController.createBlogComment);
+
+// DELETE /api/blogs/comments/:comment_id - Delete own comment (auth required)
+router.delete('/comments/:comment_id', requireAuth, blogController.deleteBlogComment);
+
+// POST /api/blogs/:blog_id/like - Toggle like (auth required)
+router.post('/:blog_id/like', requireAuth, blogController.toggleBlogLike);
+
+// POST /api/blogs/:blog_id/save - Toggle save (auth required)
+router.post('/:blog_id/save', requireAuth, blogController.toggleBlogSave);
 
 // GET /api/blogs/:id - Get single blog (must be last)
 router.get('/:identifier', (req, res) => {

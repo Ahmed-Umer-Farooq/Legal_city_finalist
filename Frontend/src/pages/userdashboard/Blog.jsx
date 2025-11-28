@@ -1,59 +1,77 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
+import CommentCount from '../../components/CommentCount';
 
 const Blog = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  const [blogs] = useState([
-    {
-      id: 1,
-      title: "Understanding Your Rights: A Comprehensive Guide to Legal Protection",
-      category: "Legal",
-      author: "Sarah Johnson",
-      date: "December 15, 2024",
-      image: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=400&h=250&fit=crop"
-    },
-    {
-      id: 2,
-      title: "Corporate Compliance: Essential Guidelines for Modern Businesses",
-      category: "Business Law",
-      author: "Michael Chen",
-      date: "December 12, 2024",
-      image: "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=400&h=250&fit=crop"
-    },
-    {
-      id: 3,
-      title: "Navigating Divorce Proceedings: What You Need to Know",
-      category: "Family Law",
-      author: "Emily Rodriguez",
-      date: "December 10, 2024",
-      image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=400&h=250&fit=crop"
-    },
-    {
-      id: 4,
-      title: "Your Rights During Police Encounters: A Legal Perspective",
-      category: "Criminal Law",
-      author: "David Thompson",
-      date: "December 8, 2024",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop"
-    },
-    {
-      id: 5,
-      title: "Property Law Essentials: Buying and Selling Real Estate Safely",
-      category: "Real Estate",
-      author: "Lisa Wang",
-      date: "December 5, 2024",
-      image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=250&fit=crop"
-    },
-    {
-      id: 6,
-      title: "Immigration Law Updates: Recent Changes and Their Impact",
-      category: "Immigration",
-      author: "Carlos Martinez",
-      date: "December 3, 2024",
-      image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=250&fit=crop"
+  const [blogs, setBlogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  const getImageUrl = (imagePath) => {
+    if (!imagePath || imagePath.trim() === '' || imagePath === 'null' || imagePath === null) return null;
+    if (imagePath.startsWith('http')) return imagePath;
+    if (imagePath.startsWith('/uploads/')) return `http://localhost:5001${imagePath}`;
+    return `http://localhost:5001/uploads/${imagePath}`;
+  };
+  
+  const getPlaceholderImage = (category, blogId) => {
+    const seeds = {
+      'Corporate Law': 'legal-corporate',
+      'Family Law': 'legal-family', 
+      'Criminal Law': 'legal-criminal',
+      'Real Estate Law': 'legal-realestate',
+      'Immigration Law': 'legal-immigration',
+      'Tax Law': 'legal-tax',
+      'Employment Law': 'legal-employment',
+      'Intellectual Property': 'legal-ip',
+      'Personal Injury': 'legal-injury',
+      'Estate Planning': 'legal-estate'
+    };
+    const seed = seeds[category] || 'legal';
+    return `https://picsum.photos/400/200?seed=${seed}${blogId}`;
+  };
+
+  useEffect(() => {
+    fetchBlogs();
+  }, []);
+
+  const fetchBlogs = async () => {
+    try {
+      const response = await fetch('/api/blogs');
+      if (response.ok) {
+        const data = await response.json();
+        const transformedBlogs = data.map(blog => ({
+          id: blog.id,
+          title: blog.title,
+          category: blog.category || 'General',
+          author: blog.author_name || 'Unknown Author',
+          date: new Date(blog.published_at).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }),
+          image: getImageUrl(blog.featured_image) || getPlaceholderImage(blog.category || 'General', blog.id),
+          comment_count: parseInt(blog.comment_count) || 0
+        }));
+        setBlogs(transformedBlogs);
+      }
+    } catch (error) {
+      console.error('Error fetching blogs:', error);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
+
+  const handleBlogClick = (blogId) => {
+    // Navigate to dashboard blog view format
+    navigate(`/user/legal-blog/${blogId}`, { state: { from: 'user-dashboard' } });
+  };
+
+  const handleViewAllBlogs = () => {
+    navigate('/dashboard/my-blog-posts');
+  };
 
   const filteredBlogs = blogs.filter(blog =>
     blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -98,31 +116,61 @@ const Blog = () => {
         <div className="lg:col-span-3">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Latest Blogs</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {filteredBlogs.map(blog => (
-              <div key={blog.id} className="bg-white rounded-lg border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-                <img 
-                  src={blog.image} 
-                  alt={blog.title}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-4">
-                  <span className="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full mb-2">
-                    {blog.category}
-                  </span>
-                  <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{blog.title}</h3>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <span>{blog.author}</span>
-                    <span>•</span>
-                    <span>{blog.date}</span>
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="bg-white rounded-lg border border-gray-100 overflow-hidden animate-pulse">
+                  <div className="w-full h-48 bg-gray-200"></div>
+                  <div className="p-4 space-y-3">
+                    <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-full"></div>
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {filteredBlogs.map(blog => (
+                <div 
+                  key={blog.id} 
+                  onClick={() => handleBlogClick(blog.id)}
+                  className="bg-white rounded-lg border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                >
+                  <img 
+                    src={blog.image} 
+                    alt={blog.title}
+                    className="w-full h-48 object-cover"
+                    onError={(e) => {
+                      if (!e.target.src.includes('picsum.photos')) {
+                        e.target.src = getPlaceholderImage(blog.category, blog.id);
+                      }
+                    }}
+                  />
+                  <div className="p-4">
+                    <span className="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full mb-2">
+                      {blog.category}
+                    </span>
+                    <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{blog.title}</h3>
+                    <div className="flex items-center justify-between text-sm text-gray-500">
+                      <div className="flex items-center gap-2">
+                        <span>{blog.author}</span>
+                        <span>•</span>
+                        <span>{blog.date}</span>
+                      </div>
+                      <CommentCount count={blog.comment_count} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="text-center">
-            <button className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+            <button 
+              onClick={handleViewAllBlogs}
+              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
               View All Blogs
             </button>
           </div>
@@ -191,6 +239,11 @@ const Blog = () => {
                     src={blog.image} 
                     alt={blog.title}
                     className="w-16 h-12 object-cover rounded"
+                    onError={(e) => {
+                      if (!e.target.src.includes('picsum.photos')) {
+                        e.target.src = getPlaceholderImage(blog.category, blog.id);
+                      }
+                    }}
                   />
                   <div className="flex-1">
                     <h4 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">{blog.title}</h4>

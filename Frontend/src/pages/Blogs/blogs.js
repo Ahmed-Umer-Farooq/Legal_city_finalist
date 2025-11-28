@@ -1,25 +1,43 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Search, ArrowLeft } from 'lucide-react';
+import CommentCount from '../../components/CommentCount';
 
 
 // Blog Card Component
-const BlogCard = ({ id, image, category, title, author, authorImage, date }) => {
+const BlogCard = ({ id, image, category, title, author, authorImage, date, comment_count = 0 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [imageError, setImageError] = useState(false);
   const [authorImageError, setAuthorImageError] = useState(false);
+  const [imageAttempted, setImageAttempted] = useState(false);
   
   const handleClick = () => {
     console.log('🔗 BlogCard clicked:', { id, title, category });
-    console.log('📍 Navigating to:', `/blog/${id}`);
-    navigate(`/blog/${id}`);
+    
+    // Determine navigation based on current context
+    const fromUserDashboard = location.pathname === '/user/legal-blog';
+    const isAuthenticated = !!localStorage.getItem('token');
+    
+    if (fromUserDashboard && isAuthenticated) {
+      // Navigate to dashboard blog view
+      console.log('📍 Navigating to dashboard view:', `/user/legal-blog/${id}`);
+      navigate(`/user/legal-blog/${id}`, { state: { from: 'user-dashboard' } });
+    } else {
+      // Navigate to public blog view
+      console.log('📍 Navigating to public view:', `/legal-blog/${id}`);
+      navigate(`/legal-blog/${id}`);
+    }
   };
   
   const getImageSrc = (featuredImage) => {
-    if (imageError || !featuredImage) {
-      return null; // Will show CSS fallback
+    if (imageError || !featuredImage || featuredImage.trim() === '') {
+      return `https://picsum.photos/400/200?seed=legal${id}`;
     }
-    return featuredImage;
+    if (featuredImage.startsWith('http')) {
+      return featuredImage;
+    }
+    return `http://localhost:5001${featuredImage}`;
   };
   
   const getAuthorImageSrc = (authorImg) => {
@@ -29,14 +47,18 @@ const BlogCard = ({ id, image, category, title, author, authorImage, date }) => 
     return authorImg;
   };
   
-  const handleImageLoad = () => {
-    console.log('✅ Image loaded successfully:', image);
+  const handleImageLoad = (e) => {
+    console.log('✅ Image loaded successfully:', e.target.src);
     setImageError(false);
+    setImageAttempted(true);
   };
   
   const handleImageError = (e) => {
-    console.error('❌ Image failed to load:', image, e);
-    setImageError(true);
+    console.error('❌ Image failed to load:', e.target.src);
+    if (!imageAttempted) {
+      setImageError(true);
+      setImageAttempted(true);
+    }
   };
   
   const handleAuthorImageError = (e) => {
@@ -78,7 +100,7 @@ const BlogCard = ({ id, image, category, title, author, authorImage, date }) => 
             {title}
           </h3>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {getAuthorImageSrc(authorImage) ? (
               <img 
@@ -95,7 +117,10 @@ const BlogCard = ({ id, image, category, title, author, authorImage, date }) => 
             )}
             <span className="text-[#97989F] text-base font-medium">{author}</span>
           </div>
-          <span className="text-[#97989F] text-base">{date}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-[#97989F] text-base">{date}</span>
+            <CommentCount count={comment_count} className="text-[#97989F]" />
+          </div>
         </div>
       </div>
     </div>
@@ -391,21 +416,17 @@ const PopularPostsWidget = () => {
       <div className="compact-padding flex flex-col compact-spacing">
         {posts.map((post) => (
           <div key={post.id} className="flex gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
-            {post.featured_image ? (
-              <img 
-                src={post.featured_image} 
-                alt={post.title || "Popular post"} 
-                className="w-20 h-16 rounded object-cover flex-shrink-0"
-                onError={(e) => {
-                  console.error('❌ Popular post image failed:', post.featured_image);
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'flex';
-                }}
-              />
-            ) : null}
-            <div className="w-20 h-16 rounded bg-gradient-to-br from-[#E7EFFD] to-[#0071BC]/20 flex items-center justify-center flex-shrink-0" style={{display: post.featured_image ? 'none' : 'flex'}}>
-              <span className="text-[#0071BC] text-xs font-medium">No Image</span>
-            </div>
+            <img 
+              src={post.featured_image && post.featured_image.trim() !== '' 
+                ? (post.featured_image.startsWith('http') ? post.featured_image : `http://localhost:5001${post.featured_image}`)
+                : `https://picsum.photos/80/64?seed=legal${post.id}`
+              } 
+              alt={post.title || "Popular post"} 
+              className="w-20 h-16 rounded object-cover flex-shrink-0"
+              onError={(e) => {
+                e.target.src = `https://picsum.photos/80/64?seed=legal${post.id}`;
+              }}
+            />
             <div className="flex-1 flex flex-col">
               <div className="inline-flex px-1.5 py-1 rounded bg-[#F6F8FF] self-start mb-2">
                 <span className="text-[#666] text-[10px] capitalize">{post.category}</span>
@@ -440,10 +461,15 @@ const Blog = () => {
   const [blogPosts, setBlogPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showAllBlogs, setShowAllBlogs] = useState(false);
   
   // Check if coming from user dashboard or admin dashboard
-  const fromUserDashboard = location.state?.from === 'user-dashboard';
+  const fromUserDashboard = location.pathname === '/user/legal-blog';
   const fromAdminDashboard = location.pathname === '/admin-blogs';
+  
+  // Check if user is logged in
+  const isLoggedIn = !!localStorage.getItem('token');
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
   // Fetch blogs from your backend
   useEffect(() => {
@@ -493,7 +519,8 @@ const Blog = () => {
           }),
           slug: blog.slug,
           tags: blog.tags ? JSON.parse(blog.tags) : [],
-          views: blog.views_count
+          views: blog.views_count,
+          comment_count: parseInt(blog.comment_count) || 0
         }));
         
         console.log('✅ Transformed blogs:', transformedBlogs);
@@ -511,66 +538,7 @@ const Blog = () => {
     fetchBlogs();
   }, []);
 
-  // Fallback mock data for testing (remove after backend is connected)
-  const mockBlogPosts = useMemo(() => [
-    {
-      id: 1,
-      image: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=720&h=400&fit=crop",
-      category: "Legal",
-      title: "Understanding Your Rights: A Comprehensive Guide to Legal Protection",
-      author: "Sarah Johnson",
-      authorImage: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=72&h=72&fit=crop&crop=face",
-      date: "December 15, 2024"
-    },
-    {
-      id: 2,
-      image: "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=720&h=400&fit=crop",
-      category: "Business Law",
-      title: "Corporate Compliance: Essential Guidelines for Modern Businesses",
-      author: "Michael Chen",
-      authorImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=72&h=72&fit=crop&crop=face",
-      date: "December 12, 2024"
-    },
-    {
-      id: 3,
-      image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=720&h=400&fit=crop",
-      category: "Family Law",
-      title: "Navigating Divorce Proceedings: What You Need to Know",
-      author: "Emily Rodriguez",
-      authorImage: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=72&h=72&fit=crop&crop=face",
-      date: "December 10, 2024"
-    },
-    {
-      id: 4,
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=720&h=400&fit=crop",
-      category: "Criminal Law",
-      title: "Your Rights During Police Encounters: A Legal Perspective",
-      author: "David Thompson",
-      authorImage: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=72&h=72&fit=crop&crop=face",
-      date: "December 8, 2024"
-    },
-    {
-      id: 5,
-      image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=720&h=400&fit=crop",
-      category: "Real Estate",
-      title: "Property Law Essentials: Buying and Selling Real Estate Safely",
-      author: "Lisa Wang",
-      authorImage: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=72&h=72&fit=crop&crop=face",
-      date: "December 5, 2024"
-    },
-    {
-      id: 6,
-      image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=720&h=400&fit=crop",
-      category: "Immigration",
-      title: "Immigration Law Updates: Recent Changes and Their Impact",
-      author: "Carlos Martinez",
-      authorImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=72&h=72&fit=crop&crop=face",
-      date: "December 3, 2024"
-    }
-  ], []);
-
-  // Use real data if available, otherwise fallback to mock data
-  const currentBlogPosts = blogPosts.length > 0 ? blogPosts : mockBlogPosts;
+  const currentBlogPosts = blogPosts;
 
   // Filter posts based on search term and category
   useEffect(() => {
@@ -618,7 +586,8 @@ const Blog = () => {
     setSearchTerm(newSearchTerm);
   };
 
-  const displayPosts = filteredPosts.length > 0 ? filteredPosts : currentBlogPosts;
+  const allPosts = filteredPosts.length > 0 ? filteredPosts : currentBlogPosts;
+  const displayPosts = showAllBlogs ? allPosts : allPosts.slice(0, 6);
 
 
   // Loading state
@@ -675,17 +644,34 @@ const Blog = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#E7EFFD]">
+    <div className={`min-h-screen ${fromUserDashboard ? 'bg-[#F1F9FF]' : 'bg-[#E7EFFD]'}`}>
       {/* Back to Dashboard Header */}
       {fromUserDashboard && (
         <div className="w-full bg-white border-b border-gray-200 px-4 sm:px-6 md:px-12 lg:px-[244px] py-4">
-          <button
-            onClick={() => navigate('/user-dashboard')}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-medium">Back to User Dashboard</span>
-          </button>
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => navigate('/user/dashboard')}
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="font-medium">Back to Dashboard</span>
+            </button>
+            {isLoggedIn && (
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-gray-600">Welcome, {currentUser.name || 'User'}</span>
+                <button
+                  onClick={() => {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    navigate('/login');
+                  }}
+                  className="text-sm text-red-600 hover:text-red-800"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
       
@@ -750,14 +736,16 @@ const Blog = () => {
                 </div>
               )}
 
-              <div className="flex justify-center">
-                <button 
-                  onClick={() => console.log('📜 View All Blogs clicked')}
-                  className="px-5 py-3 rounded-md border border-[#696A75]/30 text-[#696A75] text-base font-medium hover:bg-gray-50 transition-colors"
-                >
-                  View All Blogs
-                </button>
-              </div>
+              {!showAllBlogs && allPosts.length > 6 && (
+                <div className="flex justify-center">
+                  <button 
+                    onClick={() => setShowAllBlogs(true)}
+                    className="px-5 py-3 rounded-md border border-[#696A75]/30 text-[#696A75] text-base font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    View All Blogs ({allPosts.length})
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Right Sidebar */}

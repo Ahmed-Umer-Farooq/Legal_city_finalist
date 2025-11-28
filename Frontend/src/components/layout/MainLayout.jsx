@@ -58,7 +58,7 @@ function Header({ currentLanguage, setCurrentLanguage, translations }) {
   }, [lastScrollY]);
 
   const isActive = (path) => location.pathname === path;
-  const isDirectoryActive = () => isActive('/lawyers') || isActive('/find-lawyer');
+  const isDirectoryActive = () => isActive('/lawyers') || isActive('/lawyer-directory') || isActive('/find-lawyer') || isActive('/find-a-lawyer');
 
   const languages = [
     { code: 'EN', name: 'English' },

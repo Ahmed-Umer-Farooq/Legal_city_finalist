@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { Toaster } from 'sonner';
 
 // Eager load critical components
@@ -20,26 +20,29 @@ const FindLawyer = lazy(() => import('./pages/FindLawyer'));
 const SearchResults = lazy(() => import('./pages/SearchResults'));
 const LegalForms = lazy(() => import('./pages/LegalForms'));
 const UserDashboard = lazy(() => import('./pages/userdashboard/UserDashboard'));
-const Blog = lazy(() => import('./pages/userdashboard/Blog'));
-const BlogPage = lazy(() => import('./pages/Blogs/blogs'));
-const BlogDetail = lazy(() => import('./pages/Blogs/BlogDetail'));
 const QAPage = lazy(() => import('./pages/public/QAPage'));
 const ContactUs = lazy(() => import('./pages/ContactUs'));
-const Messages = lazy(() => import('./pages/userdashboard/Messages'));
-const Directory = lazy(() => import('./pages/userdashboard/Directory'));
-const Forms = lazy(() => import('./pages/userdashboard/Forms'));
-const SocialMedia = lazy(() => import('./pages/userdashboard/SocialMedia'));
-const Tasks = lazy(() => import('./pages/userdashboard/Tasks'));
-const Cases = lazy(() => import('./pages/userdashboard/Cases'));
-const Dashboard = lazy(() => import('./pages/userdashboard/Dashboard'));
-const Accounting = lazy(() => import('./pages/userdashboard/Accounting'));
-const Profile = lazy(() => import('./pages/userdashboard/Profile'));
-const Calendar = lazy(() => import('./pages/userdashboard/Calendar'));
-const QA = lazy(() => import('./pages/userdashboard/QA'));
-const ChatPage = lazy(() => import('./pages/userdashboard/ChatPage'));
-const Refer = lazy(() => import('./pages/userdashboard/Refer'));
-const Settings = lazy(() => import('./pages/userdashboard/Settings'));
-const Logout = lazy(() => import('./pages/auth/Logout'));
+
+// Direct imports for frequently used components
+import Blog from './pages/userdashboard/Blog';
+import BlogPage from './pages/Blogs/blogs';
+import BlogDetail from './pages/Blogs/BlogDetail';
+import BlogPosts from './pages/userdashboard/BlogPosts';
+import Messages from './pages/userdashboard/Messages';
+import Directory from './pages/userdashboard/Directory';
+import Forms from './pages/userdashboard/Forms';
+import SocialMedia from './pages/userdashboard/SocialMedia';
+import Tasks from './pages/userdashboard/Tasks';
+import Cases from './pages/userdashboard/Cases';
+import Dashboard from './pages/userdashboard/Dashboard';
+import Accounting from './pages/userdashboard/Accounting';
+import Profile from './pages/userdashboard/Profile';
+import Calendar from './pages/userdashboard/Calendar';
+import QA from './pages/userdashboard/QA';
+import ChatPage from './pages/userdashboard/ChatPage';
+import Refer from './pages/userdashboard/Refer';
+import Settings from './pages/userdashboard/Settings';
+import Logout from './pages/auth/Logout';
 
 // Loading component
 const LoadingSpinner = () => (
@@ -47,6 +50,12 @@ const LoadingSpinner = () => (
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
   </div>
 );
+
+// Redirect component for legacy blog routes
+const BlogRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={`/legal-blog/${id}`} replace />;
+};
 
 function App() {
   return (
@@ -98,7 +107,10 @@ function App() {
         {/* SEO-Friendly User Dashboard Routes */}
         <Route element={<ProtectedRoute><SharedLayout /></ProtectedRoute>}>
           <Route path="/user/dashboard" element={<Dashboard />} />
-          <Route path="/user/legal-blog" element={<Blog />} />
+          <Route path="/user/legal-blog" element={<BlogPage />} />
+          <Route path="/user/legal-blog/:id/:slug?" element={<BlogDetail />} />
+          <Route path="/user/legal-blog/:id" element={<BlogDetail />} />
+          <Route path="/dashboard/my-blog-posts" element={<BlogPosts />} />
           <Route path="/user/messages" element={<Messages />} />
           <Route path="/user/chat" element={<Messages />} />
           <Route path="/user/lawyer-directory" element={<Directory />} />
@@ -114,23 +126,30 @@ function App() {
           <Route path="/user/account-settings" element={<Settings />} />
         </Route>
         
-        {/* User Dashboard Blog Route */}
-        <Route path="/user/legal-blog-posts" element={<ProtectedRoute><BlogPage /></ProtectedRoute>} />
+
         
-        {/* Admin Blog Route - No header/footer for admin */}
+        {/* Admin Blog Routes - No header/footer for admin */}
         <Route path="/admin-blogs" element={<ProtectedRoute><BlogPage /></ProtectedRoute>} />
+        <Route path="/admin/legal-blog/:id/:slug?" element={<ProtectedRoute><BlogDetail /></ProtectedRoute>} />
+        <Route path="/admin/legal-blog/:id" element={<ProtectedRoute><BlogDetail /></ProtectedRoute>} />
         
         {/* Public pages with Main Layout (Header + Footer) */}
         <Route element={<MainLayout />}>
           <Route path="/" element={<UserInterface />} />
           <Route path="/lawyers" element={<LawyerDirectory />} />
-          <Route path="/find-lawyer" element={<FindLawyer />} />
-          <Route path="/lawyer/:id" element={<LawyerProfile />} />
-          <Route path="/blogs" element={<BlogPage />} />
+          <Route path="/lawyer-directory" element={<LawyerDirectory />} />
+          <Route path="/find-a-lawyer" element={<FindLawyer />} />
+          <Route path="/lawyer/:id/:name?" element={<LawyerProfile />} />
+          <Route path="/legal-blog" element={<BlogPage />} />
+          <Route path="/legal-blog/:id/:slug?" element={<BlogDetail />} />
+          <Route path="/legal-blog/:id" element={<BlogDetail />} />
           <Route path="/blog/:id" element={<BlogDetail />} />
-          <Route path="/qa" element={<QAPage />} />
-          <Route path="/contact-us" element={<ContactUs />} />
-          <Route path="/legal-forms" element={<LegalForms />} />
+          <Route path="/qa" element={<Suspense fallback={<LoadingSpinner />}><QAPage /></Suspense>} />
+          <Route path="/contact-us" element={<Suspense fallback={<LoadingSpinner />}><ContactUs /></Suspense>} />
+          <Route path="/legal-forms" element={<Suspense fallback={<LoadingSpinner />}><LegalForms /></Suspense>} />
+          {/* Legacy redirects */}
+          <Route path="/find-lawyer" element={<Navigate to="/find-a-lawyer" replace />} />
+          <Route path="/blogs" element={<Navigate to="/legal-blog" replace />} />
         </Route>
         
         {/* Catch all - redirect to home */}

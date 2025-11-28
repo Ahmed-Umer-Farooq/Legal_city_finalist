@@ -1,11 +1,18 @@
-# https://www.robotstxt.org/robotstxt.html
 User-agent: *
 Allow: /
+
+# SEO-friendly pages
 Allow: /lawyers
 Allow: /lawyer/*
 Allow: /blogs
 Allow: /blog/*
+Allow: /legal-blog
+Allow: /legal-blog/*
+Allow: /lawyer-directory
+Allow: /find-a-lawyer
 Allow: /qa
+
+# Disallow private areas
 Disallow: /admin/
 Disallow: /api/
 Disallow: /login
@@ -14,6 +21,7 @@ Disallow: /reset-password
 Disallow: /verify-email
 Disallow: /user-dashboard
 Disallow: /lawyer-dashboard
+Disallow: /dashboard/
 Disallow: /user/
 Disallow: /lawyer/dashboard
 Disallow: /google-*-setup
@@ -21,4 +29,5 @@ Disallow: /google-*-setup
 # Crawl-delay for better server performance
 Crawl-delay: 1
 
+# Sitemap
 Sitemap: https://legalcity.com/sitemap.xml

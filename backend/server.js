@@ -145,6 +145,46 @@ app.get('/api/admin/lawyers', async (req, res) => {
   }
 });
 
+app.get('/api/admin/chat-messages', async (req, res) => {
+  try {
+    const messages = await db('chat_messages')
+      .leftJoin('users as sender_users', function() {
+        this.on('chat_messages.sender_id', '=', 'sender_users.id')
+            .andOn('chat_messages.sender_type', '=', db.raw('?', ['user']));
+      })
+      .leftJoin('lawyers as sender_lawyers', function() {
+        this.on('chat_messages.sender_id', '=', 'sender_lawyers.id')
+            .andOn('chat_messages.sender_type', '=', db.raw('?', ['lawyer']));
+      })
+      .leftJoin('users as receiver_users', function() {
+        this.on('chat_messages.receiver_id', '=', 'receiver_users.id')
+            .andOn('chat_messages.receiver_type', '=', db.raw('?', ['user']));
+      })
+      .leftJoin('lawyers as receiver_lawyers', function() {
+        this.on('chat_messages.receiver_id', '=', 'receiver_lawyers.id')
+            .andOn('chat_messages.receiver_type', '=', db.raw('?', ['lawyer']));
+      })
+      .select(
+        'chat_messages.id',
+        'chat_messages.content as message',
+        'chat_messages.created_at',
+        db.raw('COALESCE(sender_users.name, sender_lawyers.name) as sender_name'),
+        db.raw('COALESCE(sender_users.email, sender_lawyers.email) as sender_email'),
+        db.raw('COALESCE(receiver_users.name, receiver_lawyers.name) as receiver_name'),
+        db.raw('COALESCE(receiver_users.email, receiver_lawyers.email) as receiver_email'),
+        'chat_messages.sender_type',
+        'chat_messages.receiver_type'
+      )
+      .orderBy('chat_messages.created_at', 'desc')
+      .limit(50);
+
+    res.json(messages);
+  } catch (error) {
+    console.error('Error fetching chat messages:', error);
+    res.status(500).json({ error: 'Failed to fetch chat messages' });
+  }
+});
+
 const adminRoutes = require('./routes/admin');
 console.log('🔍 Loading admin routes at /api/admin');
 app.use('/api/admin', adminRoutes);

@@ -35,6 +35,7 @@ export default function LawyerDashboard() {
   const [activeNavItem, setActiveNavItem] = useState('home');
   const [currentUser, setCurrentUser] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [blogEngagementCount, setBlogEngagementCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -150,6 +151,14 @@ export default function LawyerDashboard() {
         })
         .then(res => res.json())
         .then(data => setUnreadCount(data.count || 0))
+        .catch(console.error);
+        
+        // Get blog engagement count
+        fetch('/api/blogs/engagement-count', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+        .then(res => res.json())
+        .then(data => setBlogEngagementCount(data.count || 0))
         .catch(console.error);
       });
     }
@@ -290,7 +299,7 @@ export default function LawyerDashboard() {
                 { id: 'reports', label: 'Reports', icon: BarChart3 },
                 { id: 'tasks', label: 'Tasks', icon: CheckSquare },
                 { id: 'documents', label: 'Documents', icon: FolderOpen },
-                { id: 'blogs', label: 'Blogs', icon: File }
+                { id: 'blogs', label: 'Blog Management', icon: File, showNotification: true, notificationCount: blogEngagementCount }
               ].map((item) => {
                 const Icon = item.icon;
                 const isActive = activeNavItem === item.id;
@@ -313,10 +322,20 @@ export default function LawyerDashboard() {
                   >
                     <Icon className="w-4 h-4" />
                     <span className="hidden xl:inline">{item.label}</span>
-                    {item.showNotification && unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                        {unreadCount > 99 ? '99+' : unreadCount}
-                      </span>
+                    {item.showNotification && (
+                      item.id === 'messages' ? (
+                        unreadCount > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </span>
+                        )
+                      ) : item.id === 'blogs' ? (
+                        blogEngagementCount > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                            {blogEngagementCount > 99 ? '99+' : blogEngagementCount}
+                          </span>
+                        )
+                      ) : null
                     )}
                   </button>
                 );

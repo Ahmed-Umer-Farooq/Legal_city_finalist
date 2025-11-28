@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { Toaster } from 'sonner';
 
 import LegalCityAuth from './LegalCityAuth';
@@ -19,6 +19,7 @@ import MainLayout from './components/layout/MainLayout';
 import Blog from './pages/userdashboard/Blog';
 import BlogPage from './pages/Blogs/blogs';
 import BlogDetail from './pages/Blogs/BlogDetail';
+import BlogPosts from './pages/userdashboard/BlogPosts';
 import Messages from './pages/userdashboard/Messages';
 import Directory from './pages/userdashboard/Directory';
 import Forms from './pages/userdashboard/Forms';
@@ -31,10 +32,15 @@ import Profile from './pages/userdashboard/Profile';
 import Calendar from './pages/userdashboard/Calendar';
 import QA from './pages/userdashboard/QA';
 import ChatPage from './pages/userdashboard/ChatPage';
-
 import Refer from './pages/userdashboard/Refer';
 import Settings from './pages/userdashboard/Settings';
 import Logout from './pages/auth/Logout';
+
+// Redirect component for legacy blog routes
+const BlogRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={`/legal-blog/${id}`} replace />;
+};
 
 function App() {
   return (
@@ -71,7 +77,10 @@ function App() {
         {/* SEO-Friendly User Dashboard Routes */}
         <Route element={<ProtectedRoute><SharedLayout /></ProtectedRoute>}>
           <Route path="/user/dashboard" element={<Dashboard />} />
-          <Route path="/user/legal-blog" element={<Blog />} />
+          <Route path="/user/legal-blog" element={<BlogPage />} />
+          <Route path="/user/legal-blog/:id/:slug?" element={<BlogDetail />} />
+          <Route path="/user/legal-blog/:id" element={<BlogDetail />} />
+          <Route path="/dashboard/my-blog-posts" element={<BlogPosts />} />
           <Route path="/user/messages" element={<Messages />} />
           <Route path="/user/chat" element={<Messages />} />
           <Route path="/user/lawyer-directory" element={<Directory />} />
@@ -87,8 +96,7 @@ function App() {
           <Route path="/user/account-settings" element={<Settings />} />
         </Route>
         
-        {/* User Dashboard Blog Route */}
-        <Route path="/user/legal-blog-posts" element={<ProtectedRoute><BlogPage /></ProtectedRoute>} />
+
         
         {/* Admin Blog Route - No header/footer for admin */}
         <Route path="/admin-blogs" element={<ProtectedRoute><BlogPage /></ProtectedRoute>} />
@@ -97,10 +105,16 @@ function App() {
         <Route element={<MainLayout />}>
           <Route path="/" element={<UserInterface />} />
           <Route path="/lawyers" element={<LawyerDirectory />} />
-          <Route path="/find-lawyer" element={<FindLawyer />} />
-          <Route path="/lawyer/:id" element={<LawyerProfile />} />
-          <Route path="/blogs" element={<BlogPage />} />
+          <Route path="/lawyer-directory" element={<LawyerDirectory />} />
+          <Route path="/find-a-lawyer" element={<FindLawyer />} />
+          <Route path="/lawyer/:id/:name?" element={<LawyerProfile />} />
+          <Route path="/legal-blog" element={<BlogPage />} />
+          <Route path="/legal-blog/:id/:slug?" element={<BlogDetail />} />
+          <Route path="/legal-blog/:id" element={<BlogDetail />} />
           <Route path="/blog/:id" element={<BlogDetail />} />
+          {/* Legacy redirects */}
+          <Route path="/find-lawyer" element={<Navigate to="/find-a-lawyer" replace />} />
+          <Route path="/blogs" element={<Navigate to="/legal-blog" replace />} />
         </Route>
         
         {/* Catch all - redirect to home */}

@@ -1,327 +1,404 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { Plus, Eye, MessageCircle, Heart, Bookmark, BarChart3, Trash2, Share, Search, Filter, TrendingUp, Users, Calendar, Upload, Image as ImageIcon, X } from 'lucide-react';
 import api from '../../utils/api';
-import RoleUpdater from './RoleUpdater';
 
 const BlogManagement = () => {
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [userInfo, setUserInfo] = useState(null);
+  const [activeView, setActiveView] = useState('overview');
+  const [selectedBlog, setSelectedBlog] = useState(null);
+  const [blogAnalytics, setBlogAnalytics] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
-    title: '',
-    content: '',
-    category: '',
-    featured_image: '',
-    author_name: ''
+    title: '', content: '', category: '', author_name: '', image: '', imageUrl: ''
   });
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [imageUploadType, setImageUploadType] = useState('file'); // 'file' or 'url'
 
   useEffect(() => {
-    checkUserAuth();
     fetchBlogs();
   }, []);
-
-  const checkUserAuth = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      console.log('🔑 Token exists:', !!token);
-      
-      const response = await api.get('/auth/me');
-      setUserInfo(response.data);
-      console.log('👤 User info:', response.data);
-      console.log('🏛️ User role:', response.data?.role);
-      console.log('⚖️ Is lawyer:', response.data?.role === 'lawyer');
-    } catch (error) {
-      console.error('❌ Error fetching user info:', error);
-      setUserInfo(null);
-    }
-  };
-
-  const updateUserRole = async () => {
-    try {
-      const response = await api.put('/auth/me', { role: 'lawyer' });
-      alert('Role updated to lawyer! Please refresh the page.');
-      checkUserAuth();
-    } catch (error) {
-      console.error('Error updating role:', error);
-      alert('Failed to update role. You may need admin access.');
-    }
-  };
 
   const fetchBlogs = async () => {
     try {
       setLoading(true);
       const response = await api.get('/blogs');
-      // Handle different response formats
-      const blogData = response.data?.data || response.data || [];
-      setBlogs(Array.isArray(blogData) ? blogData : []);
+      const blogsData = response.data?.data || response.data || [];
+      // Filter blogs by current user (author_id: 44 from the token)
+      const userBlogs = blogsData.filter(blog => blog.author_id === 44);
+      setBlogs(Array.isArray(userBlogs) ? userBlogs : []);
     } catch (error) {
       console.error('Error fetching blogs:', error);
-      if (error.response?.status === 403) {
-        console.log('Access denied for fetching blogs');
-      }
       setBlogs([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB');
-        return;
-      }
-      setSelectedFile(file);
-    }
-  };
-
-  const uploadThumbnail = async () => {
-    if (!selectedFile) return null;
-    
-    setUploading(true);
+  const fetchBlogAnalytics = async (blogId) => {
     try {
-      const uploadFormData = new FormData();
-      uploadFormData.append('file', selectedFile);
-      
-      console.log('📤 Uploading file:', selectedFile.name);
-      
-      const response = await api.post('/upload/image', uploadFormData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      
-      console.log('✅ Upload successful:', response.data);
-      return response.data.url;
+      const response = await api.get(`/blogs/${blogId}/analytics`);
+      setBlogAnalytics(response.data?.data || null);
     } catch (error) {
-      console.error('❌ Upload failed:', error);
-      const errorMsg = error.response?.data?.message || 'Failed to upload image';
-      alert(`Upload failed: ${errorMsg}`);
-      return null;
-    } finally {
-      setUploading(false);
+      console.error('Error fetching analytics:', error);
+      setBlogAnalytics(null);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Debug info
-    const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    console.log('📝 Creating blog with:', { formData, token: !!token, user });
-    
     try {
-      let blogData = { ...formData };
+      const submitData = new FormData();
+      submitData.append('title', formData.title);
+      submitData.append('content', formData.content);
+      submitData.append('category', formData.category);
+      submitData.append('author_name', formData.author_name);
       
-      // Upload thumbnail if selected
-      if (selectedFile) {
-        console.log('📤 Uploading file before blog creation...');
-        const uploadedUrl = await uploadThumbnail();
-        if (uploadedUrl) {
-          console.log('✅ File uploaded, URL:', uploadedUrl);
-          blogData.featured_image = uploadedUrl;
-        } else {
-          console.log('❌ Upload failed, proceeding without image');
-        }
+      if (imageUploadType === 'file' && formData.image) {
+        submitData.append('image', formData.image);
+      } else if (imageUploadType === 'url' && formData.imageUrl) {
+        submitData.append('imageUrl', formData.imageUrl);
       }
       
-      console.log('📝 Creating blog with data:', blogData);
-      const response = await api.post('/blogs', blogData);
-      console.log('✅ Blog created successfully:', response.data);
+      await api.post('/blogs', submitData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
       alert('Blog created successfully!');
       setShowCreateForm(false);
-      setFormData({ title: '', content: '', category: '', featured_image: '', author_name: '' });
-      setSelectedFile(null);
+      setFormData({ title: '', content: '', category: '', author_name: '', image: '', imageUrl: '' });
+      setImagePreview(null);
       fetchBlogs();
     } catch (error) {
-      console.error('❌ Error creating blog:', error);
-      console.log('📊 Response status:', error.response?.status);
-      console.log('📊 Response data:', error.response?.data);
-      
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to create blog';
-      if (error.response?.status === 403) {
-        alert(`Access denied: ${errorMessage}\n\nMake sure you are logged in as a verified lawyer.`);
-      } else if (error.response?.status === 401) {
-        alert('Please login again to create blogs.');
-      } else if (error.response?.status === 404) {
-        alert('Blog endpoint not found. Backend may not be running or endpoint missing.');
-      } else {
-        alert(`Error ${error.response?.status}: ${errorMessage}`);
-      }
+      console.error('Blog creation error:', error);
+      alert('Failed to create blog: ' + (error.response?.data?.message || 'Unknown error'));
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this blog?')) {
+    if (window.confirm('Delete this blog?')) {
       try {
         await api.delete(`/blogs/${id}`);
-        alert('Blog deleted successfully!');
+        alert('Blog deleted!');
         fetchBlogs();
       } catch (error) {
-        console.error('Error deleting blog:', error);
-        alert('Failed to delete blog. Please try again.');
+        alert('Failed to delete blog');
       }
     }
   };
 
+  const handleDeleteComment = async (commentId) => {
+    if (window.confirm('Delete this comment?')) {
+      try {
+        await api.delete(`/blogs/comments/${commentId}/moderate`);
+        fetchBlogAnalytics(selectedBlog.id);
+        alert('Comment deleted!');
+      } catch (error) {
+        alert('Failed to delete comment');
+      }
+    }
+  };
+
+  const formatTimeAgo = (dateString) => {
+    const hours = Math.floor((new Date() - new Date(dateString)) / (1000 * 60 * 60));
+    if (hours < 1) return 'Just now';
+    if (hours < 24) return `${hours}h ago`;
+    if (hours < 168) return `${Math.floor(hours / 24)}d ago`;
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+        setFormData({...formData, image: file, imageUrl: e.target.result});
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleImageUrl = (url) => {
+    setFormData({...formData, imageUrl: url});
+    setImagePreview(url);
+  };
+
+  const removeImage = () => {
+    setImagePreview(null);
+    setFormData({...formData, image: '', imageUrl: ''});
+  };
+
+  const getCategoryColor = (category) => {
+    const colors = {
+      'Corporate Law': 'bg-blue-100 text-blue-800',
+      'Family Law': 'bg-pink-100 text-pink-800',
+      'Criminal Law': 'bg-red-100 text-red-800',
+      'Real Estate Law': 'bg-green-100 text-green-800',
+      'Immigration Law': 'bg-purple-100 text-purple-800',
+      'Tax Law': 'bg-yellow-100 text-yellow-800',
+      'Employment Law': 'bg-indigo-100 text-indigo-800',
+      'Intellectual Property': 'bg-cyan-100 text-cyan-800',
+      'Personal Injury': 'bg-orange-100 text-orange-800',
+      'Estate Planning': 'bg-gray-100 text-gray-800'
+    };
+    return colors[category] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getPlaceholderImage = (category, blogId) => {
+    const seeds = {
+      'Corporate Law': 'legal-corporate',
+      'Family Law': 'legal-family', 
+      'Criminal Law': 'legal-criminal',
+      'Real Estate Law': 'legal-realestate',
+      'Immigration Law': 'legal-immigration',
+      'Tax Law': 'legal-tax',
+      'Employment Law': 'legal-employment',
+      'Intellectual Property': 'legal-ip',
+      'Personal Injury': 'legal-injury',
+      'Estate Planning': 'legal-estate'
+    };
+    const seed = seeds[category] || 'legal';
+    return `https://picsum.photos/400/200?seed=${seed}${blogId}`;
+  };
+
+  const getImageUrl = (imagePath) => {
+    if (!imagePath || imagePath.trim() === '' || imagePath === 'null' || imagePath === null) return null;
+    if (imagePath.startsWith('http')) return imagePath;
+    if (imagePath.startsWith('/uploads/')) return `http://localhost:5001${imagePath}`;
+    return `http://localhost:5001/uploads/${imagePath}`;
+  };
+
+  const filteredBlogs = blogs.filter(blog => 
+    blog.title && blog.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="space-y-6">
-      {/* Role Issue Warning */}
-      {userInfo && userInfo.role !== 'lawyer' && <RoleUpdater />}
-      
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Blog Management</h2>
-          {userInfo && (
-            <div className="text-sm text-gray-600">
-              <p>Logged in as: {userInfo.name} ({userInfo.role || 'user'})</p>
-              {userInfo.role !== 'lawyer' && (
-                <div className="mt-2">
-                  <p className="text-red-600">⚠️ Account role is "{userInfo.role}" but needs to be "lawyer"</p>
-                  <button
-                    onClick={updateUserRole}
-                    className="mt-1 px-3 py-1 bg-yellow-500 text-white text-xs rounded hover:bg-yellow-600"
-                  >
-                    Update Role to Lawyer
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+          <h2 className="text-3xl font-bold text-slate-900">Blog Management</h2>
+          <p className="text-slate-600 mt-1">Create and manage your legal expertise content</p>
         </div>
         <button
           onClick={() => setShowCreateForm(!showCreateForm)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-5 h-5" />
           Create Blog
         </button>
       </div>
 
+      {/* Navigation */}
+      <div className="bg-white rounded-xl shadow-sm border">
+        <nav className="flex space-x-1 p-1">
+          <button
+            onClick={() => { setActiveView('overview'); setSelectedBlog(null); }}
+            className={`py-3 px-6 rounded-lg font-medium text-sm transition-all duration-200 ${
+              activeView === 'overview' 
+                ? 'bg-blue-600 text-white shadow-md' 
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            My Blogs
+          </button>
+          {selectedBlog && (
+            <button
+              onClick={() => setActiveView('analytics')}
+              className={`py-3 px-6 rounded-lg font-medium text-sm transition-all duration-200 ${
+                activeView === 'analytics' 
+                  ? 'bg-blue-600 text-white shadow-md' 
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              Analytics: {selectedBlog.title ? selectedBlog.title.substring(0, 20) + '...' : 'Blog'}
+            </button>
+          )}
+        </nav>
+      </div>
+
       {/* Create Form */}
       {showCreateForm && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold mb-4">Create New Blog</h3>
-          
-
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Author Name *</label>
-              <input
-                type="text"
-                name="author_name"
-                value={formData.author_name}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter your name as author..."
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter blog title..."
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Blog Thumbnail (Featured Image)</label>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-4">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileSelect}
-                    disabled={uploading}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
-                  />
-                  {uploading && (
-                    <span className="text-sm text-blue-600">🔄 Uploading...</span>
-                  )}
-                  {selectedFile && !uploading && (
-                    <span className="text-sm text-green-600">✓ {selectedFile.name}</span>
-                  )}
-                </div>
-                <div className="text-center text-gray-500">OR</div>
+        <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+          <div className="bg-gradient-to-r from-slate-50 to-blue-50 px-8 py-6 border-b border-slate-200">
+            <h3 className="text-2xl font-bold text-slate-900">Create New Blog</h3>
+            <p className="text-slate-600 mt-1">Share your legal expertise with the community</p>
+          </div>
+          <form onSubmit={handleSubmit} className="p-8 space-y-6">
+            {/* Author & Title Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Author Name *</label>
                 <input
-                  type="url"
-                  name="featured_image"
-                  value={formData.featured_image}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter image URL for blog thumbnail..."
+                  type="text"
+                  placeholder="Enter author name"
+                  value={formData.author_name}
+                  onChange={(e) => setFormData({...formData, author_name: e.target.value})}
+                  required
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">Upload an image file or enter a URL for your blog thumbnail</p>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Category</option>
-                <option value="Corporate Law">Corporate Law</option>
-                <option value="Family Law">Family Law</option>
-                <option value="Criminal Law">Criminal Law</option>
-                <option value="Real Estate">Real Estate</option>
-                <option value="Immigration">Immigration</option>
-                <option value="Personal Injury">Personal Injury</option>
-                <option value="Tax Law">Tax Law</option>
-                <option value="Employment Law">Employment Law</option>
-                <option value="Intellectual Property">Intellectual Property</option>
-                <option value="General Legal">General Legal</option>
-              </select>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Category *</label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  required
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                >
+                  <option value="">Select Legal Category</option>
+                  <option value="Corporate Law">Corporate Law</option>
+                  <option value="Family Law">Family Law</option>
+                  <option value="Criminal Law">Criminal Law</option>
+                  <option value="Real Estate Law">Real Estate Law</option>
+                  <option value="Immigration Law">Immigration Law</option>
+                  <option value="Tax Law">Tax Law</option>
+                  <option value="Employment Law">Employment Law</option>
+                  <option value="Intellectual Property">Intellectual Property</option>
+                  <option value="Personal Injury">Personal Injury</option>
+                  <option value="Estate Planning">Estate Planning</option>
+                </select>
+              </div>
             </div>
 
+            {/* Blog Title */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Blog Title *</label>
+              <input
+                type="text"
+                placeholder="Enter an engaging blog title"
+                value={formData.title}
+                onChange={(e) => setFormData({...formData, title: e.target.value})}
+                required
+                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+              />
+              <p className="text-sm text-slate-500 mt-1">{formData.title.length}/100 characters</p>
+            </div>
+
+            {/* Image Upload Section */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-3">Blog Image</label>
+              <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 bg-slate-50">
+                {/* Upload Type Toggle */}
+                <div className="flex gap-4 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setImageUploadType('file')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      imageUploadType === 'file' 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                    }`}
+                  >
+                    Upload File
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImageUploadType('url')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      imageUploadType === 'url' 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                    }`}
+                  >
+                    Image URL
+                  </button>
+                </div>
+
+                {imageUploadType === 'file' ? (
+                  <div 
+                    className="text-center border-2 border-dashed border-blue-300 rounded-lg p-8 hover:border-blue-400 transition-colors duration-200"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const file = e.dataTransfer.files[0];
+                      if (file && file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                          setImagePreview(e.target.result);
+                          setFormData({...formData, image: file, imageUrl: e.target.result});
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  >
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      id="image-upload"
+                    />
+                    <ImageIcon className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+                    <p className="text-lg font-medium text-slate-700 mb-2">Drag & drop your image here</p>
+                    <p className="text-sm text-slate-500 mb-4">or</p>
+                    <label
+                      htmlFor="image-upload"
+                      className="cursor-pointer inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
+                    >
+                      <Upload className="w-4 h-4" />
+                      Choose Image
+                    </label>
+                    <p className="text-xs text-slate-500 mt-3">PNG, JPG, GIF up to 10MB</p>
+                  </div>
+                ) : (
+                  <input
+                    type="url"
+                    placeholder="Enter image URL (https://...)"
+                    value={formData.imageUrl}
+                    onChange={(e) => handleImageUrl(e.target.value)}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                )}
+
+                {/* Image Preview */}
+                {imagePreview && (
+                  <div className="mt-4 relative">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-full h-48 object-cover rounded-lg border border-slate-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors duration-200"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Blog Content */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Blog Content *</label>
               <textarea
-                name="content"
+                placeholder="Write your blog content here..."
                 value={formData.content}
-                onChange={handleInputChange}
+                onChange={(e) => setFormData({...formData, content: e.target.value})}
                 required
                 rows={8}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Write your blog content here..."
+                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
               />
+              <p className="text-sm text-slate-500 mt-1">{formData.content.length} characters</p>
             </div>
-            
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={uploading}
-                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+
+            {/* Action Buttons */}
+            <div className="flex gap-4 pt-4">
+              <button 
+                type="submit" 
+                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
-                {uploading ? 'Uploading...' : 'Publish Blog'}
+                Publish Blog
               </button>
-              <button
-                type="button"
-                onClick={() => setShowCreateForm(false)}
-                className="bg-gray-300 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-400 transition-colors font-medium"
+              <button 
+                type="button" 
+                onClick={() => setShowCreateForm(false)} 
+                className="px-8 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all duration-200 font-semibold"
               >
                 Cancel
               </button>
@@ -330,57 +407,306 @@ const BlogManagement = () => {
         </div>
       )}
 
-      {/* Blogs List */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Your Blogs</h3>
-          {loading ? (
-            <p className="text-center text-gray-500">Loading blogs...</p>
-          ) : blogs.length === 0 ? (
-            <p className="text-center text-gray-500">No blogs found. Create your first blog!</p>
-          ) : (
-            <div className="space-y-4">
-              {blogs.map((blog) => (
-                <div key={blog.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="text-lg font-semibold text-gray-900">{blog.title}</h4>
-                      <p className="text-sm text-gray-600 mb-2">{blog.category}</p>
-                      <p className="text-gray-700 line-clamp-2">{blog.content?.substring(0, 150)}...</p>
-                      <p className="text-xs text-gray-500 mt-2">
-                        Created: {new Date(blog.created_at).toLocaleDateString()}
-                      </p>
+      {/* Main Content */}
+      {activeView === 'overview' && (
+        <>
+          {/* Search */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search your blogs..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-12 pr-4 py-3 w-full border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+              />
+            </div>
+          </div>
+
+          {/* Blogs Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+            {loading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-pulse">
+                  <div className="aspect-video bg-slate-200"></div>
+                  <div className="p-6">
+                    <div className="h-4 bg-slate-200 rounded mb-4"></div>
+                    <div className="h-3 bg-slate-200 rounded mb-2"></div>
+                    <div className="h-3 bg-slate-200 rounded w-2/3"></div>
+                    <div className="flex gap-4 mt-4">
+                      <div className="h-8 bg-slate-200 rounded flex-1"></div>
+                      <div className="h-8 bg-slate-200 rounded w-16"></div>
                     </div>
-                    <div className="flex items-center gap-2 ml-4">
+                  </div>
+                </div>
+              ))
+            ) : filteredBlogs.length === 0 ? (
+              <div className="col-span-full text-center py-16">
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
+                  <BarChart3 className="w-12 h-12 text-blue-500" />
+                </div>
+                <h3 className="text-xl font-semibold text-slate-900 mb-2">No blogs found</h3>
+                <p className="text-slate-600 mb-6">Create your first blog to start sharing your legal expertise!</p>
+                <button
+                  onClick={() => setShowCreateForm(true)}
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-semibold"
+                >
+                  Create Your First Blog
+                </button>
+              </div>
+            ) : (
+              filteredBlogs.map((blog) => (
+                <div key={blog.id} className="bg-white rounded-2xl shadow-lg border border-slate-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden group">
+                  <div className="aspect-video bg-gradient-to-br from-slate-100 to-blue-50 relative overflow-hidden">
+                    <img 
+                      src={getImageUrl(blog.featured_image) || getPlaceholderImage(blog.category, blog.id)} 
+                      alt={blog.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        if (!e.target.src.includes('picsum.photos')) {
+                          e.target.src = getPlaceholderImage(blog.category, blog.id);
+                        }
+                      }}
+                    />
+                    <div className="absolute top-4 left-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getCategoryColor(blog.category || 'General')}`}>
+                        {blog.category || 'General'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    <h3 className="font-bold text-lg text-slate-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors duration-200">
+                      {blog.title || 'Untitled Blog'}
+                    </h3>
+                    <p className="text-slate-600 text-sm mb-4 line-clamp-2">
+                      {blog.excerpt ? blog.excerpt.substring(0, 120) + '...' : 'No content available'}
+                    </p>
+                    <div className="flex items-center justify-between text-sm text-slate-500 mb-4">
+                      <span className="font-medium">{blog.author_name || 'Unknown Author'}</span>
+                      <span>{blog.published_at ? formatTimeAgo(blog.published_at) : 'Unknown Date'}</span>
+                    </div>
+                    
+                    {/* Metrics */}
+                    <div className="grid grid-cols-4 gap-3 mb-4">
+                      <div className="text-center p-2 bg-slate-50 rounded-lg">
+                        <Eye className="w-4 h-4 text-blue-500 mx-auto mb-1" />
+                        <div className="text-xs font-semibold text-slate-700">{blog.views_count || 0}</div>
+                      </div>
+                      <div className="text-center p-2 bg-slate-50 rounded-lg">
+                        <Heart className="w-4 h-4 text-red-500 mx-auto mb-1" />
+                        <div className="text-xs font-semibold text-slate-700">{blog.like_count || 0}</div>
+                      </div>
+                      <div className="text-center p-2 bg-slate-50 rounded-lg">
+                        <MessageCircle className="w-4 h-4 text-green-500 mx-auto mb-1" />
+                        <div className="text-xs font-semibold text-slate-700">{blog.comment_count || 0}</div>
+                      </div>
+                      <div className="text-center p-2 bg-slate-50 rounded-lg">
+                        <Bookmark className="w-4 h-4 text-purple-500 mx-auto mb-1" />
+                        <div className="text-xs font-semibold text-slate-700">0</div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2">
                       <button
-                        onClick={() => window.open(`/blog/${blog.id}`, '_blank')}
-                        className="p-2 text-blue-600 hover:bg-blue-100 rounded-md transition-colors"
-                        title="View Blog"
+                        onClick={() => {
+                          setSelectedBlog(blog);
+                          setActiveView('analytics');
+                          fetchBlogAnalytics(blog.id);
+                        }}
+                        className="flex-1 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 px-4 py-2 rounded-lg hover:from-blue-100 hover:to-blue-200 transition-all duration-200 text-sm font-semibold flex items-center justify-center gap-2"
                       >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => alert('Edit functionality coming soon!')}
-                        className="p-2 text-green-600 hover:bg-green-100 rounded-md transition-colors"
-                        title="Edit Blog"
-                      >
-                        <Edit className="w-4 h-4" />
+                        <BarChart3 className="w-4 h-4" />
+                        Analytics
                       </button>
                       <button
                         onClick={() => handleDelete(blog.id)}
-                        className="p-2 text-red-600 hover:bg-red-100 rounded-md transition-colors"
-                        title="Delete Blog"
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
                 </div>
-              ))}
+              ))
+            )}
+          </div>
+        </>
+      )}
+
+      {activeView === 'analytics' && selectedBlog && (
+        <div className="space-y-8">
+          {/* Analytics Header */}
+          <div className="bg-gradient-to-r from-white to-blue-50 rounded-2xl shadow-lg border border-slate-200 p-8">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-2xl font-bold text-slate-900 mb-2">{selectedBlog.title || 'Untitled Blog'}</h3>
+                <p className="text-slate-600 flex items-center gap-2">
+                  <span>Published by {selectedBlog.author_name || 'Unknown Author'}</span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-4 h-4" />
+                    {selectedBlog.published_at ? formatTimeAgo(selectedBlog.published_at) : 'Unknown Date'}
+                  </span>
+                </p>
+              </div>
+              <span className={`px-4 py-2 rounded-full text-sm font-semibold ${getCategoryColor(selectedBlog.category || 'General')}`}>
+                {selectedBlog.category || 'General'}
+              </span>
+            </div>
+          </div>
+
+          {blogAnalytics ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg p-6 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-blue-100 text-sm font-medium">Total Views</p>
+                      <p className="text-3xl font-bold mt-1">{blogAnalytics.metrics?.views_count || 0}</p>
+                    </div>
+                    <Eye className="w-8 h-8" />
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl shadow-lg p-6 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-red-100 text-sm font-medium">Likes</p>
+                      <p className="text-3xl font-bold mt-1">{blogAnalytics.metrics?.like_count || 0}</p>
+                    </div>
+                    <Heart className="w-8 h-8" />
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg p-6 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-green-100 text-sm font-medium">Comments</p>
+                      <p className="text-3xl font-bold mt-1">{blogAnalytics.metrics?.comment_count || 0}</p>
+                    </div>
+                    <MessageCircle className="w-8 h-8" />
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl shadow-lg p-6 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-purple-100 text-sm font-medium">Saves</p>
+                      <p className="text-3xl font-bold mt-1">{blogAnalytics.metrics?.save_count || 0}</p>
+                    </div>
+                    <Bookmark className="w-8 h-8" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 border-b border-slate-200">
+                    <h4 className="text-xl font-bold text-slate-900 flex items-center gap-3">
+                      <MessageCircle className="w-5 h-5 text-green-500" />
+                      Recent Comments ({blogAnalytics.comments?.length || 0})
+                    </h4>
+                  </div>
+                  <div className="p-6">
+                    {blogAnalytics.comments?.length > 0 ? (
+                      <div className="space-y-4 max-h-96 overflow-y-auto">
+                        {blogAnalytics.comments.map((comment) => (
+                          <div key={comment.id} className="bg-slate-50 rounded-xl p-4">
+                            <div className="flex items-start gap-4">
+                              <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                {comment.user_name?.charAt(0) || 'U'}
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between mb-2">
+                                  <p className="font-semibold text-slate-900">{comment.user_name}</p>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-slate-500 bg-white px-2 py-1 rounded-full">
+                                      {formatTimeAgo(comment.created_at)}
+                                    </span>
+                                    <button
+                                      onClick={() => handleDeleteComment(comment.id)}
+                                      className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                                <p className="text-slate-700 text-sm">{comment.comment_text}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <MessageCircle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                        <p className="text-slate-500">No comments yet</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+                    <div className="bg-gradient-to-r from-red-50 to-pink-50 p-6 border-b border-slate-200">
+                      <h4 className="text-lg font-bold text-slate-900 flex items-center gap-3">
+                        <Heart className="w-4 h-4 text-red-500" />
+                        Liked by ({blogAnalytics.likes?.length || 0})
+                      </h4>
+                    </div>
+                    <div className="p-6">
+                      {blogAnalytics.likes?.length > 0 ? (
+                        <div className="space-y-3 max-h-48 overflow-y-auto">
+                          {blogAnalytics.likes.map((user, index) => (
+                            <div key={index} className="flex items-center gap-3 p-3 hover:bg-red-50 rounded-xl">
+                              <div className="w-8 h-8 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                                {user.name?.charAt(0) || 'U'}
+                              </div>
+                              <span className="text-slate-700 font-medium">{user.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-slate-500 text-center py-4">No likes yet</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+                    <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 border-b border-slate-200">
+                      <h4 className="text-lg font-bold text-slate-900 flex items-center gap-3">
+                        <Bookmark className="w-4 h-4 text-purple-500" />
+                        Saved by ({blogAnalytics.saves?.length || 0})
+                      </h4>
+                    </div>
+                    <div className="p-6">
+                      {blogAnalytics.saves?.length > 0 ? (
+                        <div className="space-y-3 max-h-48 overflow-y-auto">
+                          {blogAnalytics.saves.map((user, index) => (
+                            <div key={index} className="flex items-center gap-3 p-3 hover:bg-purple-50 rounded-xl">
+                              <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                                {user.name?.charAt(0) || 'U'}
+                              </div>
+                              <span className="text-slate-700 font-medium">{user.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-slate-500 text-center py-4">No saves yet</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-16 text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto mb-6"></div>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">Loading Analytics</h3>
+              <p className="text-slate-500">Gathering insights about your blog performance...</p>
             </div>
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 };

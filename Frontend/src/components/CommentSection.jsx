@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { MessageCircle, User, Trash2, Reply } from 'lucide-react';
 
-const CommentSection = ({ blogId }) => {
-  const { user, isAuthenticated } = useContext(AuthContext);
+const CommentSection = ({ blogId, isDashboardView, isPublicView }) => {
+  const { user, isAuthenticated } = useAuth();
+  const location = useLocation();
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState('');
@@ -30,7 +32,15 @@ const CommentSection = ({ blogId }) => {
 
   const handleSubmitComment = async (e) => {
     e.preventDefault();
-    if (!newComment.trim() || !isAuthenticated) return;
+    if (!newComment.trim()) return;
+    
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    
+    if (!isAuthenticated || !token || !userData) {
+      alert('Please login to comment');
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -135,8 +145,7 @@ const CommentSection = ({ blogId }) => {
         </h3>
       </div>
 
-      {/* Comment Form */}
-      {isAuthenticated ? (
+      {isDashboardView && isAuthenticated ? (
         <form onSubmit={handleSubmitComment} className="mb-8">
           <div className="flex gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-600 flex items-center justify-center flex-shrink-0">
@@ -174,18 +183,32 @@ const CommentSection = ({ blogId }) => {
           </div>
         </form>
       ) : (
-        <div className="mb-8 p-4 bg-gray-50 rounded-lg text-center">
-          <p className="text-gray-600 mb-3">Login to ask a question or comment</p>
-          <button
-            onClick={() => window.location.href = '/login'}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Login to Comment
-          </button>
+        <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
+          <MessageCircle size={24} className="text-yellow-600 mx-auto mb-2" />
+          <p className="text-gray-700 mb-3 font-medium">Login to comment</p>
+          <p className="text-gray-600 text-sm mb-4">Access blogs from your dashboard to post comments and engage with the community</p>
+          <div className="flex gap-2 justify-center">
+            <button
+              onClick={() => {
+                // Save current blog URL for redirect after login
+                const currentPath = window.location.pathname;
+                let blogId;
+                if (currentPath.includes('/legal-blog/')) {
+                  blogId = currentPath.split('/legal-blog/')[1].split('/')[0];
+                } else {
+                  blogId = currentPath.split('/').pop();
+                }
+                sessionStorage.setItem('redirectAfterLogin', `/user/legal-blog/${blogId}`);
+                window.location.href = '/login';
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Login to Comment
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Comments List */}
       <div className="space-y-6">
         {comments.length === 0 ? (
           <div className="text-center py-8">
@@ -217,7 +240,7 @@ const CommentSection = ({ blogId }) => {
                       {comment.comment_text}
                     </p>
                     <div className="flex items-center gap-4">
-                      {isAuthenticated && (
+                      {isDashboardView && isAuthenticated && (
                         <button
                           onClick={() => setReplyTo(comment.id)}
                           className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 transition-colors"
@@ -237,7 +260,6 @@ const CommentSection = ({ blogId }) => {
                       )}
                     </div>
 
-                    {/* Replies */}
                     {comments
                       .filter(reply => reply.parent_comment_id === comment.id)
                       .map(reply => (

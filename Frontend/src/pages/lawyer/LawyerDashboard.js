@@ -31,6 +31,7 @@ export default function LawyerDashboard() {
   const [activeNavItem, setActiveNavItem] = useState('home');
   const [currentUser, setCurrentUser] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [blogEngagementCount, setBlogEngagementCount] = useState(0);
 
   useEffect(() => {
     fetchDashboardData();
@@ -51,6 +52,14 @@ export default function LawyerDashboard() {
         })
         .then(res => res.json())
         .then(data => setUnreadCount(data.count || 0))
+        .catch(console.error);
+        
+        // Get blog engagement count
+        fetch('/api/blogs/engagement-count', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+        .then(res => res.json())
+        .then(data => setBlogEngagementCount(data.count || 0))
         .catch(console.error);
       });
     }
@@ -168,7 +177,7 @@ export default function LawyerDashboard() {
                 { id: 'reports', label: 'Reports', icon: BarChart3, action: () => { setActiveNavItem('reports'); alert('Reports page coming soon!'); } },
                 { id: 'tasks', label: 'Tasks', icon: CheckSquare, action: () => { setActiveNavItem('tasks'); alert('Tasks page coming soon!'); } },
                 { id: 'documents', label: 'Documents', icon: FolderOpen, action: () => { setActiveNavItem('documents'); alert('Documents page coming soon!'); } },
-                { id: 'blogs', label: 'Blogs', icon: FileText, action: () => { setActiveNavItem('blogs'); } }
+                { id: 'blogs', label: 'Blog Management', icon: FileText, action: () => { setActiveNavItem('blogs'); setBlogEngagementCount(0); }, showNotification: true, notificationCount: blogEngagementCount }
               ].map((item) => {
                 const Icon = item.icon;
                 const isActive = activeNavItem === item.id;
@@ -184,10 +193,20 @@ export default function LawyerDashboard() {
                   >
                     <Icon className="w-4 h-4" />
                     <span className="hidden md:inline">{item.label}</span>
-                    {item.showNotification && unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                        {unreadCount > 99 ? '99+' : unreadCount}
-                      </span>
+                    {item.showNotification && (
+                      item.id === 'messages' ? (
+                        unreadCount > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </span>
+                        )
+                      ) : item.id === 'blogs' ? (
+                        blogEngagementCount > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                            {blogEngagementCount > 99 ? '99+' : blogEngagementCount}
+                          </span>
+                        )
+                      ) : null
                     )}
                   </button>
                 );

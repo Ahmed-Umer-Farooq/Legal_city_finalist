@@ -57,7 +57,7 @@ function Header({ currentLanguage, setCurrentLanguage, translations }) {
   }, [lastScrollY]);
 
   const isActive = (path) => location.pathname === path;
-  const isDirectoryActive = () => isActive('/lawyers') || isActive('/find-lawyer');
+  const isDirectoryActive = () => isActive('/lawyers') || isActive('/lawyer-directory') || isActive('/find-lawyer') || isActive('/find-a-lawyer');
 
   const languages = [
     { code: 'EN', name: 'English' },
@@ -153,45 +153,83 @@ function Header({ currentLanguage, setCurrentLanguage, translations }) {
               </button>
               <button
                 onClick={() => {
-                  navigate('/find-lawyer');
+                  navigate('/find-a-lawyer');
                   setShowDirectoryMenu(false);
                 }}
                 className={`w-full px-4 py-2 text-left text-sm transition-colors rounded-b-lg ${
-                  isActive('/find-lawyer') 
+                  isActive('/find-a-lawyer') 
                     ? 'bg-blue-50 text-blue-600' 
                     : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600'
                 }`}
               >
-                Find Lawyer
+                Find a Lawyer
               </button>
             </div>
           </div>
           <button 
-            onClick={() => navigate('/blogs')}
+            onClick={() => navigate('/legal-blog')}
             className={`hidden md:flex items-center text-sm gap-2 transition-all duration-200 px-3 py-2 relative ${
-              isActive('/blogs') 
+              isActive('/legal-blog') 
                 ? 'text-white' 
                 : 'text-white/90 hover:text-white'
             }`}
           >
-            <span>Blogs</span>
-            {isActive('/blogs') && (
+            <span>Legal Blog</span>
+            {isActive('/legal-blog') && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"></div>
             )}
           </button>
         </div>
 
         <div className="flex items-center gap-2">
-          <button 
-            onClick={handleLoginClick}
-            className="flex items-center gap-2 h-[38px] px-4 rounded-[20px] bg-transparent border border-white/30 hover:bg-white/10 transition-colors"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="7" cy="4" r="3" stroke="white" strokeWidth="1.5"/>
-              <path d="M2 12c0-2.5 2.5-4 5-4s5 1.5 5 4" stroke="white" strokeWidth="1.5"/>
-            </svg>
-            <span className="text-white text-sm">{translations[currentLanguage].login}</span>
-          </button>
+          {/* Check if user is logged in */}
+          {(() => {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            
+            if (token && user.name) {
+              return (
+                <div className="flex items-center gap-3">
+                  <span className="text-white text-sm">Welcome, {user.name}</span>
+                  <button
+                    onClick={() => {
+                      if (user.role === 'lawyer') {
+                        navigate('/lawyer-dashboard');
+                      } else {
+                        navigate('/user/dashboard');
+                      }
+                    }}
+                    className="flex items-center gap-2 h-[38px] px-4 rounded-[20px] bg-white/20 hover:bg-white/30 transition-colors"
+                  >
+                    <span className="text-white text-sm">Dashboard</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem('token');
+                      localStorage.removeItem('user');
+                      navigate('/login');
+                    }}
+                    className="flex items-center gap-2 h-[38px] px-4 rounded-[20px] bg-transparent border border-white/30 hover:bg-white/10 transition-colors"
+                  >
+                    <span className="text-white text-sm">Logout</span>
+                  </button>
+                </div>
+              );
+            } else {
+              return (
+                <button 
+                  onClick={handleLoginClick}
+                  className="flex items-center gap-2 h-[38px] px-4 rounded-[20px] bg-transparent border border-white/30 hover:bg-white/10 transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="7" cy="4" r="3" stroke="white" strokeWidth="1.5"/>
+                    <path d="M2 12c0-2.5 2.5-4 5-4s5 1.5 5 4" stroke="white" strokeWidth="1.5"/>
+                  </svg>
+                  <span className="text-white text-sm">{translations[currentLanguage].login}</span>
+                </button>
+              );
+            }
+          })()}
 
           <div className="relative">
             <button 
@@ -225,12 +263,15 @@ function Header({ currentLanguage, setCurrentLanguage, translations }) {
             )}
           </div>
 
-          <button 
-            onClick={handleSignupClick}
-            className="h-[38px] px-6 rounded-[20px] bg-white text-black text-sm font-medium hover:bg-gray-100 transition-colors"
-          >
-            {translations[currentLanguage].signup}
-          </button>
+          {/* Only show signup button if not logged in */}
+          {!localStorage.getItem('token') && (
+            <button 
+              onClick={handleSignupClick}
+              className="h-[38px] px-6 rounded-[20px] bg-white text-black text-sm font-medium hover:bg-gray-100 transition-colors"
+            >
+              {translations[currentLanguage].signup}
+            </button>
+          )}
         </div>
       </div>
     </header>

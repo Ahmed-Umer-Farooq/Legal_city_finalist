@@ -1,3 +1,20 @@
-# https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+
+# SEO-friendly pages
+Allow: /legal-blog
+Allow: /legal-blog/*
+Allow: /lawyer-directory
+Allow: /find-a-lawyer
+Allow: /lawyer/*
+
+# Disallow private areas
+Disallow: /dashboard/
+Disallow: /user/
+Disallow: /admin/
+Disallow: /login
+Disallow: /register
+Disallow: /lawyer-dashboard
+
+# Sitemap
+Sitemap: https://legalcity.com/sitemap.xml

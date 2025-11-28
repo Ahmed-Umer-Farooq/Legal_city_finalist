@@ -1,58 +1,64 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Clock, Calendar, Share2, Heart, Bookmark, Twitter, Facebook, Linkedin } from 'lucide-react';
-import CommentSection from '../components/CommentSection';
+import CommentSection from '../../components/CommentSection';
+import { useAuth } from '../../context/AuthContext';
+import { updatePageMeta, generateSlug } from '../../utils/seo';
 
 const BlogDetail = () => {
   const { id } = useParams();
+  console.log('🔍 Blog ID from params:', id);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated } = useAuth();
+  const fromUserDashboard = location.state?.from === 'user-dashboard';
+  
+  // Image handling functions
+  const getImageUrl = (imagePath) => {
+    if (!imagePath || imagePath.trim() === '' || imagePath === 'null' || imagePath === null) return null;
+    if (imagePath.startsWith('http')) return imagePath;
+    if (imagePath.startsWith('/uploads/')) return `http://localhost:5001${imagePath}`;
+    return `http://localhost:5001/uploads/${imagePath}`;
+  };
+  
+  const getPlaceholderImage = (category, blogId) => {
+    const seeds = {
+      'Corporate Law': 'legal-corporate',
+      'Family Law': 'legal-family', 
+      'Criminal Law': 'legal-criminal',
+      'Real Estate Law': 'legal-realestate',
+      'Immigration Law': 'legal-immigration',
+      'Tax Law': 'legal-tax',
+      'Employment Law': 'legal-employment',
+      'Intellectual Property': 'legal-ip',
+      'Personal Injury': 'legal-injury',
+      'Estate Planning': 'legal-estate'
+    };
+    const seed = seeds[category] || 'legal';
+    return `https://picsum.photos/400/200?seed=${seed}${blogId}`;
+  };
+  
+  // Determine if we're in dashboard view (authenticated user accessing from dashboard)
+  const isDashboardView = isAuthenticated && (location.pathname.startsWith('/user/') || fromUserDashboard);
+  const isPublicView = !isAuthenticated || location.pathname.startsWith('/legal-blog/');
   const [blogPost, setBlogPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [relatedArticles, setRelatedArticles] = useState([]);
+  const [liked, setLiked] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-  // Mock blog data - this will be replaced with API call
-  const mockBlogData = {
-    1: {
-      id: 1,
-      title: "The Impact of Technology on the Workplace: How Technology is Changing the Future of Work",
-      subtitle: "Exploring how digital transformation is reshaping modern work environments and employee experiences",
-      image: "https://api.builder.io/api/v1/image/assets/TEMP/11f7861cf89e09f6875572fe63029caefc31975f?width=1200",
-      category: "Technology",
-      author: "Tracey Wilson",
-      authorImage: "https://api.builder.io/api/v1/image/assets/TEMP/6e945e1cd44d2b22a4cb1d0842ee1f337241865a?width=72",
-      authorBio: "Senior Technology Writer with 10+ years of experience covering digital transformation and workplace innovation.",
-      date: "August 20, 2022",
-      readTime: "8 min read",
-      content: `<p>The modern workplace has undergone a dramatic transformation in recent years, driven largely by rapid technological advancement and changing employee expectations...</p>`
-    },
-    2: {
-      id: 2,
-      title: "Remote Work Best Practices for 2024",
-      subtitle: "Essential strategies for building effective remote teams and maintaining productivity",
-      image: "https://api.builder.io/api/v1/image/assets/TEMP/450d0adf401d715bca87a6daa7b1191160d2fbd0?width=1200",
-      category: "Workplace",
-      author: "Jason Francisco",
-      authorImage: "https://api.builder.io/api/v1/image/assets/TEMP/757c3729b6e0edaf54ca15744d2032dbf6f9f7e4?width=72",
-      authorBio: "Remote work consultant and productivity expert helping companies transition to distributed teams.",
-      date: "August 15, 2022",
-      readTime: "6 min read",
-      content: `<p>Remote work has become the new normal for millions of professionals worldwide. As we move into 2024, organizations are refining their remote work strategies...</p>`
-    },
-    3: {
-      id: 3,
-      title: "AI Tools Every Professional Should Know",
-      subtitle: "Discover the artificial intelligence tools that are revolutionizing professional workflows",
-      image: "https://api.builder.io/api/v1/image/assets/TEMP/009a2c6f83dbee655315ff081a26f62a37882d38?width=1200",
-      category: "AI & Technology",
-      author: "Ernie Smith",
-      authorImage: "https://api.builder.io/api/v1/image/assets/TEMP/61278300fa3bc490e7708662fbbdb4b37596dc7c?width=72",
-      authorBio: "AI researcher and technology journalist specializing in practical applications of artificial intelligence.",
-      date: "August 10, 2022",
-      readTime: "7 min read",
-      content: `<p>Artificial Intelligence is no longer a futuristic concept—it's here, and it's transforming how we work. From content creation to data analysis...</p>`
+
+
+  // Check localStorage for like/save status on component mount
+  useEffect(() => {
+    if (!isAuthenticated) {
+      const likedBlogs = JSON.parse(localStorage.getItem('likedBlogs') || '[]');
+      const savedBlogs = JSON.parse(localStorage.getItem('savedBlogs') || '[]');
+      setLiked(likedBlogs.includes(id));
+      setSaved(savedBlogs.includes(id));
     }
-  };
+  }, [id, isAuthenticated]);
 
   useEffect(() => {
     const fetchBlogPost = async () => {
@@ -60,7 +66,11 @@ const BlogDetail = () => {
         setLoading(true);
         console.log('🔍 Fetching blog post with ID:', id);
         
-        const response = await fetch(`http://localhost:5001/api/blogs/${id}`);
+        if (!id) {
+          throw new Error('Blog ID is missing from URL parameters');
+        }
+        
+        const response = await fetch(`/api/blogs/${id}`);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -74,7 +84,7 @@ const BlogDetail = () => {
           id: data.id,
           title: data.title,
           subtitle: data.excerpt || 'Read more about this topic',
-          image: data.featured_image,
+          image: getImageUrl(data.featured_image) || getPlaceholderImage(data.category || 'General', data.id),
           category: data.category || 'General',
           author: data.author_name || 'Unknown Author',
           authorImage: data.author_image,
@@ -90,6 +100,15 @@ const BlogDetail = () => {
         
         console.log('✅ Transformed blog post:', transformedPost);
         setBlogPost(transformedPost);
+        
+        // Update SEO meta tags
+        const slug = generateSlug(transformedPost.title);
+        updatePageMeta(
+          `${transformedPost.title} | LegalCity Blog`,
+          transformedPost.subtitle || `Read about ${transformedPost.category} law and legal insights.`,
+          `${transformedPost.category}, legal advice, law, lawyer, ${transformedPost.author}`,
+          `${window.location.origin}/legal-blog/${id}/${slug}`
+        );
         
       } catch (err) {
         console.error('❌ Error fetching blog post:', err);
@@ -107,7 +126,7 @@ const BlogDetail = () => {
     const fetchRelatedArticles = async () => {
       try {
         console.log('🔗 Fetching related articles...');
-        const response = await fetch('http://localhost:5001/api/blogs?limit=6');
+        const response = await fetch('/api/blogs?limit=6');
         const articles = await response.json();
         
         // Filter out current article and take first 3
@@ -117,7 +136,7 @@ const BlogDetail = () => {
           .map(article => ({
             id: article.id,
             title: article.title,
-            image: article.featured_image,
+            image: getImageUrl(article.featured_image) || getPlaceholderImage(article.category || 'General', article.id),
             category: article.category || 'General',
             readTime: '5 min read'
           }));
@@ -133,6 +152,101 @@ const BlogDetail = () => {
       fetchRelatedArticles();
     }
   }, [id]);
+
+  const handleLike = async () => {
+    // Allow non-logged users to like (store in localStorage)
+    if (!isAuthenticated) {
+      const likedBlogs = JSON.parse(localStorage.getItem('likedBlogs') || '[]');
+      const isCurrentlyLiked = likedBlogs.includes(id);
+      
+      if (isCurrentlyLiked) {
+        const updated = likedBlogs.filter(blogId => blogId !== id);
+        localStorage.setItem('likedBlogs', JSON.stringify(updated));
+        setLiked(false);
+      } else {
+        likedBlogs.push(id);
+        localStorage.setItem('likedBlogs', JSON.stringify(likedBlogs));
+        setLiked(true);
+        // Show notification for first-time users
+        if (likedBlogs.length === 1) {
+          alert('Like saved locally! Sign up to sync your preferences across devices.');
+        }
+      }
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/blogs/${id}/like`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setLiked(data.liked);
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
+  };
+
+  const handleSave = async () => {
+    // Allow non-logged users to save (store in localStorage)
+    if (!isAuthenticated) {
+      const savedBlogs = JSON.parse(localStorage.getItem('savedBlogs') || '[]');
+      const isCurrentlySaved = savedBlogs.includes(id);
+      
+      if (isCurrentlySaved) {
+        const updated = savedBlogs.filter(blogId => blogId !== id);
+        localStorage.setItem('savedBlogs', JSON.stringify(updated));
+        setSaved(false);
+      } else {
+        savedBlogs.push(id);
+        localStorage.setItem('savedBlogs', JSON.stringify(savedBlogs));
+        setSaved(true);
+        // Show notification for first-time users
+        if (savedBlogs.length === 1) {
+          alert('Article saved locally! Sign up to access your saved articles from any device.');
+        }
+      }
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/blogs/${id}/save`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSaved(data.saved);
+      }
+    } catch (error) {
+      console.error('Error toggling save:', error);
+    }
+  };
+
+  const handleShare = () => {
+    const url = window.location.href;
+    const title = blogPost?.title || 'Check out this blog post';
+    
+    if (navigator.share) {
+      navigator.share({
+        title: title,
+        url: url
+      });
+    } else {
+      navigator.clipboard.writeText(url);
+      alert('Link copied to clipboard!');
+    }
+  };
 
   if (loading) {
     return (
@@ -169,18 +283,74 @@ const BlogDetail = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Back Navigation */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <button 
-            onClick={() => navigate('/blogs')}
-            className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors font-medium"
-          >
-            <ArrowLeft size={20} />
-            Back to Blogs
-          </button>
+      {/* Back Navigation - Only show in dashboard view */}
+      {isDashboardView && (
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <button 
+              onClick={() => navigate('/user/dashboard')}
+              className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors font-medium"
+            >
+              <ArrowLeft size={20} />
+              Back to Dashboard
+            </button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Info Banner for Non-Logged Users - Only show in public view */}
+      {isPublicView && !isAuthenticated && (
+        <div className="bg-blue-50 border-b border-blue-200">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs">i</span>
+                </div>
+                <span className="text-blue-800 text-sm">
+                  You can like, share, and save articles. <strong>Sign up</strong> to comment and sync across devices.
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    // Save dashboard blog URL for redirect after login
+                    const currentPath = window.location.pathname;
+                    let blogId;
+                    if (currentPath.includes('/legal-blog/')) {
+                      blogId = currentPath.split('/legal-blog/')[1].split('/')[0];
+                    } else {
+                      blogId = currentPath.split('/').pop();
+                    }
+                    sessionStorage.setItem('redirectAfterLogin', `/user/legal-blog/${blogId}`);
+                    navigate('/login');
+                  }}
+                  className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => {
+                    // Save dashboard blog URL for redirect after register
+                    const currentPath = window.location.pathname;
+                    let blogId;
+                    if (currentPath.includes('/legal-blog/')) {
+                      blogId = currentPath.split('/legal-blog/')[1].split('/')[0];
+                    } else {
+                      blogId = currentPath.split('/').pop();
+                    }
+                    sessionStorage.setItem('redirectAfterLogin', `/user/legal-blog/${blogId}`);
+                    navigate('/register');
+                  }}
+                  className="text-xs bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
+                >
+                  Sign Up
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Hero Section */}
       <div className="bg-white">
@@ -236,15 +406,36 @@ const BlogDetail = () => {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-4 mb-8">
-            <button className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors">
-              <Heart size={18} />
-              <span className="font-medium">Like</span>
+            <button 
+              onClick={handleLike}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                liked 
+                  ? 'bg-red-100 text-red-600' 
+                  : 'bg-red-50 text-red-600 hover:bg-red-100'
+              }`}
+              title={!isAuthenticated ? 'Like (stored locally)' : 'Like'}
+            >
+              <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
+              <span className="font-medium">{liked ? 'Liked' : 'Like'}</span>
+              {!isAuthenticated && <span className="text-xs opacity-75">(local)</span>}
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-              <Bookmark size={18} />
-              <span className="font-medium">Save</span>
+            <button 
+              onClick={handleSave}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                saved 
+                  ? 'bg-blue-100 text-blue-600' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              title={!isAuthenticated ? 'Save (stored locally)' : 'Save'}
+            >
+              <Bookmark size={18} fill={saved ? 'currentColor' : 'none'} />
+              <span className="font-medium">{saved ? 'Saved' : 'Save'}</span>
+              {!isAuthenticated && <span className="text-xs opacity-75">(local)</span>}
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
+            <button 
+              onClick={handleShare}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+            >
               <Share2 size={18} />
               <span className="font-medium">Share</span>
             </button>
@@ -255,24 +446,16 @@ const BlogDetail = () => {
       {/* Featured Image */}
       <div className="bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          {currentBlogPost.image ? (
-            <img 
-              src={currentBlogPost.image} 
-              alt={currentBlogPost.title}
-              className="w-full h-96 object-cover rounded-xl shadow-lg"
-            />
-          ) : (
-            <div className="w-full h-96 bg-gradient-to-br from-[#E7EFFD] via-[#B8D4F1] to-[#0071BC] rounded-xl shadow-lg flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-20 h-20 mx-auto mb-4 bg-white/20 rounded-full flex items-center justify-center">
-                  <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <span className="text-white font-medium text-lg">{currentBlogPost.category} Article</span>
-              </div>
-            </div>
-          )}
+          <img 
+            src={currentBlogPost.image} 
+            alt={currentBlogPost.title}
+            className="w-full h-96 object-cover rounded-xl shadow-lg"
+            onError={(e) => {
+              if (!e.target.src.includes('picsum.photos')) {
+                e.target.src = getPlaceholderImage(currentBlogPost.category, currentBlogPost.id);
+              }
+            }}
+          />
         </div>
       </div>
 
@@ -343,32 +526,21 @@ const BlogDetail = () => {
                 key={article.id}
                 onClick={() => {
                   console.log('🔗 Related article clicked:', article.title);
-                  navigate(`/blog/${article.id}`);
+                  const slug = generateSlug(article.title);
+                  navigate(`/legal-blog/${article.id}/${slug}`);
                 }}
                 className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
               >
-                {article.image ? (
-                  <img 
-                    src={article.image} 
-                    alt={article.title}
-                    className="w-full h-48 object-cover"
-                    onError={(e) => {
-                      console.error('❌ Related article image failed:', article.image);
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-                <div className="w-full h-48 bg-gradient-to-br from-[#E7EFFD] via-[#B8D4F1] to-[#0071BC] flex items-center justify-center" style={{display: article.image ? 'none' : 'flex'}}>
-                  <div className="text-center">
-                    <div className="w-12 h-12 mx-auto mb-2 bg-white/20 rounded-full flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <span className="text-white font-medium text-sm">{article.category}</span>
-                  </div>
-                </div>
+                <img 
+                  src={article.image} 
+                  alt={article.title}
+                  className="w-full h-48 object-cover"
+                  onError={(e) => {
+                    if (!e.target.src.includes('picsum.photos')) {
+                      e.target.src = getPlaceholderImage(article.category, article.id);
+                    }
+                  }}
+                />
                 <div className="p-6">
                   <div className="mb-3">
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
@@ -389,7 +561,7 @@ const BlogDetail = () => {
       {/* Comments Section */}
       <div className="bg-gray-100">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <CommentSection blogId={id} />
+          <CommentSection blogId={id} isDashboardView={isDashboardView} isPublicView={isPublicView} />
         </div>
       </div>
 

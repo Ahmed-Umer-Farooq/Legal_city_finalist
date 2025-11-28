@@ -33,6 +33,25 @@ export default function LawyerDashboard() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [blogEngagementCount, setBlogEngagementCount] = useState(0);
 
+  // Prevent browser back button
+  useEffect(() => {
+    const preventBack = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+    
+    const handlePopState = (event) => {
+      event.preventDefault();
+      window.history.pushState(null, '', window.location.href);
+    };
+    
+    preventBack();
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
   useEffect(() => {
     fetchDashboardData();
     // Get current user from localStorage

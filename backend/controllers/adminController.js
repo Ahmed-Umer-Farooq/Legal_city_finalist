@@ -266,6 +266,124 @@ const getAllChatMessages = async (req, res) => {
   }
 };
 
+const getActivityLogs = async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    const offset = (page - 1) * limit;
+    
+    // Get recent user registrations
+    const recentUsers = await db('users')
+      .select('id', 'name', 'email', 'created_at', 'is_verified')
+      .orderBy('created_at', 'desc')
+      .limit(5);
+    
+    // Get recent lawyer registrations and verifications
+    const recentLawyers = await db('lawyers')
+      .select('id', 'name', 'email', 'created_at', 'is_verified', 'lawyer_verified')
+      .orderBy('created_at', 'desc')
+      .limit(5);
+    
+    // Get recent chat activity
+    const recentChats = await db('chat_messages')
+      .leftJoin('users as sender_users', function() {
+        this.on('chat_messages.sender_id', '=', 'sender_users.id')
+            .andOn('chat_messages.sender_type', '=', db.raw('?', ['user']));
+      })
+      .leftJoin('lawyers as sender_lawyers', function() {
+        this.on('chat_messages.sender_id', '=', 'sender_lawyers.id')
+            .andOn('chat_messages.sender_type', '=', db.raw('?', ['lawyer']));
+      })
+      .select(
+        'chat_messages.id',
+        'chat_messages.created_at',
+        db.raw('COALESCE(sender_users.name, sender_lawyers.name) as sender_name'),
+        db.raw('COALESCE(sender_users.email, sender_lawyers.email) as sender_email'),
+        'chat_messages.sender_type'
+      )
+      .orderBy('chat_messages.created_at', 'desc')
+      .limit(5);
+    
+    // Get recent blog activity
+    const recentBlogs = await db('blogs')
+      .select('id', 'title', 'author_name', 'created_at', 'status')
+      .orderBy('created_at', 'desc')
+      .limit(3);
+    
+    // Combine all activities into a unified log
+    const activities = [];
+    
+    // Add user registrations
+    recentUsers.forEach(user => {
+      activities.push({
+        id: `user-reg-${user.id}`,
+        event: 'User Registration',
+        user: user.email,
+        details: user.name || 'New user registered',
+        timestamp: user.created_at,
+        status: user.is_verified ? 'success' : 'pending',
+        type: 'user_registration'
+      });
+    });
+    
+    // Add lawyer registrations and verifications
+    recentLawyers.forEach(lawyer => {
+      activities.push({
+        id: `lawyer-reg-${lawyer.id}`,
+        event: lawyer.is_verified || lawyer.lawyer_verified ? 'Lawyer Verified' : 'Lawyer Registration',
+        user: lawyer.email,
+        details: lawyer.name || 'New lawyer registered',
+        timestamp: lawyer.created_at,
+        status: lawyer.is_verified || lawyer.lawyer_verified ? 'success' : 'pending',
+        type: 'lawyer_activity'
+      });
+    });
+    
+    // Add chat activities
+    recentChats.forEach(chat => {
+      activities.push({
+        id: `chat-${chat.id}`,
+        event: 'Message Activity',
+        user: chat.sender_email,
+        details: `${chat.sender_name} sent a message`,
+        timestamp: chat.created_at,
+        status: 'success',
+        type: 'chat_activity'
+      });
+    });
+    
+    // Add blog activities
+    recentBlogs.forEach(blog => {
+      activities.push({
+        id: `blog-${blog.id}`,
+        event: blog.status === 'published' ? 'Blog Published' : 'Blog Created',
+        user: blog.author_name || 'Unknown',
+        details: blog.title,
+        timestamp: blog.created_at,
+        status: blog.status === 'published' ? 'success' : 'pending',
+        type: 'blog_activity'
+      });
+    });
+    
+    // Sort by timestamp and limit
+    const sortedActivities = activities
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(offset, offset + parseInt(limit));
+    
+    res.json({
+      activities: sortedActivities,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: activities.length,
+        totalPages: Math.ceil(activities.length / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching activity logs:', error);
+    res.status(500).json({ error: 'Failed to fetch activity logs' });
+  }
+};
+
 module.exports = {
   getStats,
   getUsers,
@@ -276,5 +394,6 @@ module.exports = {
   deleteLawyer,
   makeAdmin,
   removeAdmin,
-  getAllChatMessages
+  getAllChatMessages,
+  getActivityLogs
 };

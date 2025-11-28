@@ -590,6 +590,25 @@ const Layout = ({ children, showFooter = false }) => {
   
   const sidebarWidth = sidebarCollapsed ? 64 : 256;
 
+  // Prevent browser back button
+  useEffect(() => {
+    const preventBack = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+    
+    const handlePopState = (event) => {
+      event.preventDefault();
+      window.history.pushState(null, '', window.location.href);
+    };
+    
+    preventBack();
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     setCurrentUser(user);

@@ -63,6 +63,28 @@ const AdminDashboard = () => {
   const [blogComments, setBlogComments] = useState([]);
   const [loadingComments, setLoadingComments] = useState(false);
 
+  // Prevent browser back button
+  useEffect(() => {
+    const preventBack = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+    
+    const handlePopState = (event) => {
+      event.preventDefault();
+      window.history.pushState(null, '', window.location.href);
+    };
+    
+    // Push initial state
+    preventBack();
+    
+    // Listen for back button
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
   // Auto-refresh interval (every 30 seconds)
   useEffect(() => {
     const interval = setInterval(() => {
@@ -85,7 +107,7 @@ const AdminDashboard = () => {
     } else if (activeTab === 'blogs') {
       fetchBlogs();
     }
-  }, [activeTab, usersPagination.page, lawyersPagination.page, logsPagination.page]);
+  }, [activeTab, usersPagination.page, lawyersPagination.page, logsPagination.page, blogsPagination.page]);
 
   const refreshData = async () => {
     setRefreshing(true);
@@ -190,39 +212,36 @@ const AdminDashboard = () => {
   const fetchActivityLogs = async () => {
     setLoading(true);
     try {
-      // Get recent chat activity
-      const chatResponse = await api.get('/chat/conversations').catch(() => ({ data: [] }));
-      const conversations = chatResponse.data || [];
+      const response = await api.get('/admin/activity-logs', {
+        params: {
+          page: logsPagination.page,
+          limit: logsPagination.limit
+        }
+      });
       
-      const chatLogs = conversations.slice(0, 3).map(conv => ({
-        id: `chat-${conv.partner_id}`,
-        event: 'Message Activity',
-        user: conv.partner_email || conv.partner_name,
-        timestamp: new Date(conv.last_message_time).toLocaleDateString(),
-        status: 'success'
+      const activities = response.data?.activities || [];
+      
+      // Format the activities for display
+      const formattedLogs = activities.map(activity => ({
+        id: activity.id,
+        event: activity.event,
+        user: activity.user,
+        details: activity.details,
+        timestamp: new Date(activity.timestamp).toLocaleDateString(),
+        status: activity.status,
+        type: activity.type
       }));
-
-      const logs = [
-        ...chatLogs,
-        ...recentUsers.slice(0, 2).map((user) => ({
-          id: `user-${user.id}`,
-          event: 'User Registration',
-          user: user.email,
-          timestamp: new Date(user.created_at).toLocaleDateString(),
-          status: user.is_verified ? 'success' : 'pending'
-        })),
-        ...recentLawyers.slice(0, 2).map((lawyer) => ({
-          id: `lawyer-${lawyer.id}`,
-          event: lawyer.is_verified ? 'Lawyer Verified' : 'Lawyer Registration',
-          user: lawyer.email,
-          timestamp: new Date(lawyer.created_at).toLocaleDateString(),
-          status: lawyer.is_verified ? 'success' : 'pending'
-        }))
-      ].slice(0, 8);
       
-      setActivityLogs(logs);
+      setActivityLogs(formattedLogs);
+      setLogsPagination(prev => ({ 
+        ...prev, 
+        total: response.data?.pagination?.total || 0,
+        totalPages: response.data?.pagination?.totalPages || 1
+      }));
     } catch (error) {
       console.error('Error fetching activity logs:', error);
+      // Fallback to empty array if API fails
+      setActivityLogs([]);
     }
     setLoading(false);
   };
@@ -1122,30 +1141,99 @@ const AdminDashboard = () => {
   const renderActivityLogs = () => (
     <div className="bg-white border border-gray-200 rounded-lg">
       <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-base font-semibold text-gray-900">Recent Activity</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-semibold text-gray-900 flex items-center">
+            <Activity className="w-4 h-4 mr-2 text-gray-500" />
+            Activity Logs ({logsPagination.total})
+          </h3>
+          <button
+            onClick={fetchActivityLogs}
+            className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </div>
       
-      <div className="divide-y divide-gray-100">
+      <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
         {loading ? (
-          <div className="px-6 py-8 text-center text-gray-500">Loading...</div>
+          <div className="px-6 py-8 text-center text-gray-500">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            Loading activity logs...
+          </div>
+        ) : activityLogs.length === 0 ? (
+          <div className="px-6 py-8 text-center text-gray-500">
+            <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p>No recent activity found</p>
+          </div>
         ) : (
           activityLogs.map(log => (
-            <div key={log.id} className="px-6 py-3 flex items-center justify-between hover:bg-gray-50">
-              <div className="flex items-center space-x-3">
-                <div className={`w-2 h-2 rounded-full ${
-                  log.status === 'success' ? 'bg-green-500' : 
-                  log.status === 'pending' ? 'bg-yellow-500' : 'bg-gray-400'
-                }`} />
-                <div>
-                  <div className="text-sm font-medium text-gray-900">{log.event}</div>
-                  <div className="text-xs text-gray-500">{log.user}</div>
+            <div key={log.id} className="px-6 py-4 hover:bg-gray-50">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start space-x-3">
+                  <div className={`w-3 h-3 rounded-full mt-1 flex-shrink-0 ${
+                    log.status === 'success' ? 'bg-green-500' : 
+                    log.status === 'pending' ? 'bg-yellow-500' : 
+                    log.status === 'error' ? 'bg-red-500' : 'bg-gray-400'
+                  }`} />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-medium text-gray-900">{log.event}</span>
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        log.type === 'user_registration' ? 'bg-blue-100 text-blue-800' :
+                        log.type === 'lawyer_activity' ? 'bg-purple-100 text-purple-800' :
+                        log.type === 'chat_activity' ? 'bg-green-100 text-green-800' :
+                        log.type === 'blog_activity' ? 'bg-orange-100 text-orange-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {log.type?.replace('_', ' ') || 'activity'}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-600 mb-1">{log.details}</div>
+                    <div className="text-xs text-gray-500">
+                      User: {log.user}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-xs text-gray-400 ml-4 flex-shrink-0">
+                  {log.timestamp}
                 </div>
               </div>
-              <div className="text-xs text-gray-400">{log.timestamp}</div>
             </div>
           ))
         )}
       </div>
+      
+      {/* Pagination for Activity Logs */}
+      {activityLogs.length > 0 && (
+        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+          <p className="text-sm text-gray-500">
+            Showing {((logsPagination.page - 1) * logsPagination.limit) + 1} to{' '}
+            {Math.min(logsPagination.page * logsPagination.limit, logsPagination.total)} of{' '}
+            {logsPagination.total} activities
+          </p>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setLogsPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+              disabled={logsPagination.page === 1}
+              className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <span className="text-sm text-gray-700">
+              Page {logsPagination.page} of {logsPagination.totalPages || 1}
+            </span>
+            <button
+              onClick={() => setLogsPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+              disabled={logsPagination.page >= logsPagination.totalPages}
+              className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 

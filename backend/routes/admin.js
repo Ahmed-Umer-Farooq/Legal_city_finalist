@@ -11,7 +11,8 @@ const {
   deleteLawyer,
   makeAdmin,
   removeAdmin,
-  getAllChatMessages
+  getAllChatMessages,
+  getActivityLogs
 } = require('../controllers/adminController');
 
 // All routes require admin authentication - DISABLED FOR DEVELOPMENT
@@ -39,5 +40,8 @@ router.delete('/lawyers/:id', deleteLawyer);
 
 // Chat management
 router.get('/chat-messages', getAllChatMessages);
+
+// Activity logs
+router.get('/activity-logs', getActivityLogs);
 
 module.exports = router;

@@ -98,8 +98,10 @@ function App() {
         
 
         
-        {/* Admin Blog Route - No header/footer for admin */}
+        {/* Admin Blog Routes - No header/footer for admin */}
         <Route path="/admin-blogs" element={<ProtectedRoute><BlogPage /></ProtectedRoute>} />
+        <Route path="/admin/legal-blog/:id/:slug?" element={<ProtectedRoute><BlogDetail /></ProtectedRoute>} />
+        <Route path="/admin/legal-blog/:id" element={<ProtectedRoute><BlogDetail /></ProtectedRoute>} />
         
         {/* Public pages with Main Layout (Header + Footer) */}
         <Route element={<MainLayout />}>

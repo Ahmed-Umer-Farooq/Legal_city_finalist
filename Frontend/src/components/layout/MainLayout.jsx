@@ -263,8 +263,8 @@ function Header({ currentLanguage, setCurrentLanguage, translations }) {
             )}
           </div>
 
-          {/* Only show signup button if not logged in */}
-          {!localStorage.getItem('token') && (
+          {/* Only show signup button if not logged in and not from admin */}
+          {!localStorage.getItem('token') && !location.pathname.includes('/admin') && (
             <button 
               onClick={handleSignupClick}
               className="h-[38px] px-6 rounded-[20px] bg-white text-black text-sm font-medium hover:bg-gray-100 transition-colors"

@@ -12,6 +12,7 @@ const BlogDetail = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   const fromUserDashboard = location.state?.from === 'user-dashboard';
+  const fromAdminDashboard = location.pathname.startsWith('/admin/');
   
   // Image handling functions
   const getImageUrl = (imagePath) => {
@@ -38,9 +39,10 @@ const BlogDetail = () => {
     return `https://picsum.photos/400/200?seed=${seed}${blogId}`;
   };
   
-  // Determine if we're in dashboard view (authenticated user accessing from dashboard)
+  // Determine view context
   const isDashboardView = isAuthenticated && (location.pathname.startsWith('/user/') || fromUserDashboard);
-  const isPublicView = !isAuthenticated || location.pathname.startsWith('/legal-blog/');
+  const isAdminView = fromAdminDashboard || location.state?.from === 'admin-dashboard';
+  const isPublicView = !isAuthenticated || (location.pathname.startsWith('/legal-blog/') && !isAdminView);
   const [blogPost, setBlogPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -283,7 +285,7 @@ const BlogDetail = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Back Navigation - Only show in dashboard view */}
+      {/* Navigation - Only show when not in public view with main layout */}
       {isDashboardView && (
         <div className="bg-white border-b border-gray-200">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -297,9 +299,24 @@ const BlogDetail = () => {
           </div>
         </div>
       )}
+      
+      {/* Admin Navigation - Only show when accessed from admin */}
+      {fromAdminDashboard && (
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <button 
+              onClick={() => navigate('/admin-dashboard')}
+              className="flex items-center gap-2 text-red-600 hover:text-red-800 transition-colors font-medium"
+            >
+              <ArrowLeft size={20} />
+              Back to Admin Panel
+            </button>
+          </div>
+        </div>
+      )}
 
-      {/* Info Banner for Non-Logged Users - Only show in public view */}
-      {isPublicView && !isAuthenticated && (
+      {/* Info Banner for Non-Logged Users - Only show in true public view */}
+      {isPublicView && !isAuthenticated && !isAdminView && (
         <div className="bg-blue-50 border-b border-blue-200">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <div className="flex items-center justify-between">

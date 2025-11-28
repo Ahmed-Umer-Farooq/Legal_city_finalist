@@ -19,7 +19,10 @@ const blogController = {
           'blogs.published_at',
           'blogs.author_name'
         )
-        .where('blogs.status', 'published');
+        .count('blog_comments.id as comment_count')
+        .leftJoin('blog_comments', 'blogs.id', 'blog_comments.blog_id')
+        .where('blogs.status', 'published')
+        .groupBy('blogs.id');
 
       if (category) query = query.where('blogs.category', category);
       if (search) query = query.where('blogs.title', 'like', `%${search}%`);
@@ -318,6 +321,91 @@ const blogController = {
     } catch (error) {
       console.error('Error fetching lawyer blogs:', error);
       res.status(500).json({ message: 'Failed to fetch blogs' });
+    }
+  },
+
+  // Get comments for a blog (public)
+  getBlogComments: async (req, res) => {
+    try {
+      const { blog_id } = req.params;
+      
+      const comments = await db('blog_comments')
+        .select(
+          'blog_comments.*',
+          'users.name as user_name',
+          'users.role as user_role'
+        )
+        .leftJoin('users', 'blog_comments.user_id', 'users.id')
+        .where('blog_comments.blog_id', blog_id)
+        .orderBy('blog_comments.created_at', 'asc');
+
+      res.json(comments);
+    } catch (error) {
+      console.error('Error fetching blog comments:', error);
+      res.status(500).json({ message: 'Failed to fetch comments' });
+    }
+  },
+
+  // Create comment (auth required)
+  createBlogComment: async (req, res) => {
+    try {
+      const { blog_id } = req.params;
+      const { comment_text, parent_comment_id } = req.body;
+      
+      if (!comment_text || comment_text.trim().length === 0) {
+        return res.status(400).json({ message: 'Comment text is required' });
+      }
+
+      // Check if blog exists
+      const blog = await db('blogs').where('id', blog_id).first();
+      if (!blog) {
+        return res.status(404).json({ message: 'Blog not found' });
+      }
+
+      const [commentId] = await db('blog_comments').insert({
+        blog_id: parseInt(blog_id),
+        user_id: req.user.id,
+        comment_text: comment_text.trim(),
+        parent_comment_id: parent_comment_id || null
+      });
+
+      const newComment = await db('blog_comments')
+        .select(
+          'blog_comments.*',
+          'users.name as user_name',
+          'users.role as user_role'
+        )
+        .leftJoin('users', 'blog_comments.user_id', 'users.id')
+        .where('blog_comments.id', commentId)
+        .first();
+
+      res.status(201).json(newComment);
+    } catch (error) {
+      console.error('Error creating blog comment:', error);
+      res.status(500).json({ message: 'Failed to create comment' });
+    }
+  },
+
+  // Delete own comment (auth required)
+  deleteBlogComment: async (req, res) => {
+    try {
+      const { comment_id } = req.params;
+      
+      const comment = await db('blog_comments').where('id', comment_id).first();
+      if (!comment) {
+        return res.status(404).json({ message: 'Comment not found' });
+      }
+
+      // Only allow user to delete their own comment or admin
+      if (comment.user_id !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'You can only delete your own comments' });
+      }
+
+      await db('blog_comments').where('id', comment_id).del();
+      res.json({ message: 'Comment deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting blog comment:', error);
+      res.status(500).json({ message: 'Failed to delete comment' });
     }
   }
 };

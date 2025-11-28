@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Search, ArrowLeft } from 'lucide-react';
+import CommentCount from '../components/CommentCount';
 
 
 // Blog Card Component
-const BlogCard = ({ id, image, category, title, author, authorImage, date }) => {
+const BlogCard = ({ id, image, category, title, author, authorImage, date, comment_count = 0 }) => {
   const navigate = useNavigate();
   const [imageError, setImageError] = useState(false);
   const [authorImageError, setAuthorImageError] = useState(false);
@@ -78,7 +79,7 @@ const BlogCard = ({ id, image, category, title, author, authorImage, date }) => 
             {title}
           </h3>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {getAuthorImageSrc(authorImage) ? (
               <img 
@@ -95,7 +96,10 @@ const BlogCard = ({ id, image, category, title, author, authorImage, date }) => 
             )}
             <span className="text-[#97989F] text-base font-medium">{author}</span>
           </div>
-          <span className="text-[#97989F] text-base">{date}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-[#97989F] text-base">{date}</span>
+            <CommentCount count={comment_count} className="text-[#97989F]" />
+          </div>
         </div>
       </div>
     </div>
@@ -493,7 +497,8 @@ const Blog = () => {
           }),
           slug: blog.slug,
           tags: blog.tags ? JSON.parse(blog.tags) : [],
-          views: blog.views_count
+          views: blog.views_count,
+          comment_count: parseInt(blog.comment_count) || 0
         }));
         
         console.log('✅ Transformed blogs:', transformedBlogs);

@@ -29,6 +29,16 @@ router.get('/tags', blogController.getBlogTags);
 // GET /api/blogs/popular - Get popular posts
 router.get('/popular', blogController.getPopularPosts);
 
+// COMMENT ROUTES
+// GET /api/blogs/:blog_id/comments - Get comments for a blog (public)
+router.get('/:blog_id/comments', blogController.getBlogComments);
+
+// POST /api/blogs/:blog_id/comments - Create comment (auth required)
+router.post('/:blog_id/comments', requireAuth, blogController.createBlogComment);
+
+// DELETE /api/blogs/comments/:comment_id - Delete own comment (auth required)
+router.delete('/comments/:comment_id', requireAuth, blogController.deleteBlogComment);
+
 // GET /api/blogs/:id - Get single blog (must be last)
 router.get('/:identifier', (req, res) => {
   const { identifier } = req.params;

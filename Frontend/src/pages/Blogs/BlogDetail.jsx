@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, Calendar, Share2, Heart, Bookmark, Twitter, Facebook, Linkedin } from 'lucide-react';
+import CommentSection from '../components/CommentSection';
 
 const BlogDetail = () => {
   const { id } = useParams();
@@ -382,6 +383,13 @@ const BlogDetail = () => {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Comments Section */}
+      <div className="bg-gray-100">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <CommentSection blogId={id} />
         </div>
       </div>
 
